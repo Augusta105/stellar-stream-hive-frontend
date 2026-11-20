@@ -1,7 +1,18 @@
 import { NETWORK, STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
+import { buildReportIssueUrl } from "@/lib/reportIssue";
 
 export function Footer() {
   const streamContractId = process.env.NEXT_PUBLIC_STREAM_CONTRACT_ID;
+  const reportIssueUrl = buildReportIssueUrl({
+    appVersion: process.env.NEXT_PUBLIC_APP_VERSION || "dev",
+    appCommit: process.env.NEXT_PUBLIC_APP_COMMIT || "dev",
+    network: NETWORK,
+    contractIds: {
+      Stream: process.env.NEXT_PUBLIC_STREAM_CONTRACT_ID,
+      Vault: process.env.NEXT_PUBLIC_VAULT_CONTRACT_ID,
+      Registry: process.env.NEXT_PUBLIC_REGISTRY_CONTRACT_ID,
+    },
+  });
 
   return (
     <footer className="border-t border-border">
@@ -52,6 +63,15 @@ export function Footer() {
             className="transition hover:text-white"
           >
             Frontend
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+          <a
+            href={reportIssueUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="transition hover:text-white"
+          >
+            Report an issue
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </div>
