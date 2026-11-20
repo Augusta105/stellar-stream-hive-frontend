@@ -10,7 +10,9 @@ By participating in this project you agree to abide by our
 ## Repository layout
 
 See the "Project structure" section of [`README.md`](./README.md) for a map of `app/`,
-`components/`, `hooks/`, and `lib/`.
+`components/`, `hooks/`, and `lib/`. [`docs/architecture.md`](./docs/architecture.md) explains
+which layer may import which, and where each kind of data comes from. Read it before adding a
+new module or a new network call.
 
 Related repositories, if your change touches contract behavior or indexed data instead of the
 frontend itself:

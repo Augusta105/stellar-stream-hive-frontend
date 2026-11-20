@@ -107,6 +107,9 @@ See [`.env.example`](./.env.example) for the full, documented list. In short:
 
 ## Project structure
 
+For how these layers depend on each other and where each data source comes from, see
+[`docs/architecture.md`](./docs/architecture.md).
+
 ```
 app/
   page.tsx                    Landing page (hero, no-wallet live demo, platform stats)
