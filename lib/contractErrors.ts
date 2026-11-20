@@ -41,6 +41,15 @@ export interface RpcErrorDescription {
   details: string;
 }
 
+/** Shown when the RPC reports a missing source account, which means it was never funded. */
+export const UNFUNDED_ACCOUNT_MESSAGE = "This account is not funded yet. Fund it with Friendbot on testnet.";
+
+const UNFUNDED_ACCOUNT_PATTERN = /tx_no_source_account|account not found/i;
+
+export function isUnfundedAccountError(message: string): boolean {
+  return typeof message === "string" && UNFUNDED_ACCOUNT_PATTERN.test(message);
+}
+
 const RPC_ERROR_RULES: ReadonlyArray<{ pattern: RegExp; message: string }> = [
   {
     pattern: /tx_bad_seq|txBadSeq|bad sequence/i,
@@ -51,8 +60,8 @@ const RPC_ERROR_RULES: ReadonlyArray<{ pattern: RegExp; message: string }> = [
     message: "The network fee was too low. Try again.",
   },
   {
-    pattern: /tx_no_source_account|account not found/i,
-    message: "That account could not be found on the network.",
+    pattern: UNFUNDED_ACCOUNT_PATTERN,
+    message: UNFUNDED_ACCOUNT_MESSAGE,
   },
   {
     pattern: /rate limit|too many requests|\b429\b/i,
