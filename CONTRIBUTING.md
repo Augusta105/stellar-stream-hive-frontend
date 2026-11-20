@@ -36,6 +36,36 @@ Contract-calling features (create/withdraw/cancel a stream) require
 only working on UI/UX that doesn't touch live contract state, you can leave these unset — the
 app will show a clear "not yet configured" state rather than erroring.
 
+## Testnet funds and Freighter setup
+
+Wallet-connected features only work on the Stellar **testnet**, and the testnet account you use
+must be funded before it can sign anything. Follow these steps once per browser profile:
+
+1. **Install Freighter.** Add the [Freighter](https://www.freighter.app/) extension to a
+   Chromium or Firefox browser, then create a wallet or import an existing one. Use a test wallet
+   only, never one that holds real funds.
+2. **Switch Freighter to Testnet.** Open Freighter, open the network selector, and choose
+   **Testnet**. The app reads `NEXT_PUBLIC_STELLAR_NETWORK` from `.env.local` (`TESTNET` in
+   `.env.example`), so Freighter and the app must agree. The
+   [wrong-network message](./README.md#troubleshooting) appears when they do not.
+3. **Fund the account with Friendbot.** Copy your public key (the `G…` address) from Freighter,
+   then open this URL in your browser, replacing `<PUBLIC_KEY>` with that address:
+
+   ```
+   https://friendbot.stellar.org/?addr=<PUBLIC_KEY>
+   ```
+
+   Friendbot gives the account test XLM. It works only on testnet. Repeat for each account you
+   need, such as a sender and a recipient.
+4. **Start the app and connect.** Run `npm run dev`, open
+   [http://localhost:3000](http://localhost:3000), and click the wallet connect button. If
+   Freighter asks whether this site may connect, allow it. The network badge should then read
+   Testnet.
+
+If Freighter is not detected at all, reload the page after installing it. The
+[troubleshooting table in the README](./README.md#troubleshooting) lists the other common
+errors.
+
 ## Running against a local API and testnet contracts
 
 The app shows real streams only when it can reach an indexer API. To try the full flow:
@@ -48,9 +78,9 @@ The app shows real streams only when it can reach an indexer API. To try the ful
 2. **Point the frontend at it.** In `.env.local`, set
    `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`, then restart `npm run dev`.
 3. **Fund two testnet accounts.** In Freighter, switch to **Testnet** and create or import a
-   sender and a recipient account. Fund each one with Friendbot at
-   `https://friendbot.stellar.org/?addr=<PUBLIC_KEY>`. Friendbot only works on testnet, so never
-   use a mainnet key here.
+   sender and a recipient account. Fund each one with Friendbot as described in
+   [Testnet funds and Freighter setup](#testnet-funds-and-freighter-setup). Never use a mainnet
+   key here.
 4. **Create a test stream.** Connect the sender account, enter the recipient's address, keep
    XLM as the token, choose a small amount, and submit. Freighter asks you to sign. Once the
    transaction confirms, the stream shows up in the sender's list after the indexer's next poll.
