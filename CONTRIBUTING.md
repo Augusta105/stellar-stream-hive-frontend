@@ -28,6 +28,21 @@ cp .env.example .env.local
 npm run dev
 ```
 
+### Pre-commit checks
+
+`npm install` sets up a Git pre-commit hook (via [husky](https://typicode.github.io/husky/)).
+On each commit it runs [lint-staged](https://github.com/lint-staged/lint-staged), which only
+touches the files you staged:
+
+- ESLint with `--fix` on staged `.ts`, `.tsx`, `.js`, `.jsx` and `.mjs` files
+- Prettier on staged code, JSON, Markdown and CSS files
+
+Run the same format check CI runs with `npm run format:check`, or fix formatting with
+`npm run format`.
+
+To commit without the hook (for example, while rebasing), set `HUSKY=0` for that command:
+`HUSKY=0 git commit -m "..."`.
+
 You'll need the [Freighter](https://www.freighter.app/) browser extension to exercise
 wallet-connected flows locally, set to **Testnet**.
 
