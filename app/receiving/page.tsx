@@ -134,7 +134,7 @@ export default function ReceivingPage() {
                   <span className="text-muted">Stream #{r.streamId}</span>
                   {r.hash ? (
                     <a
-                      href={stellarExpertTxUrl(r.hash, STELLAR_EXPERT_NETWORK)}
+                      href={stellarExpertTxUrl(r.hash, STELLAR_EXPERT_NETWORK) ?? undefined}
                       target="_blank"
                       rel="noreferrer"
                       className="text-accent underline"
