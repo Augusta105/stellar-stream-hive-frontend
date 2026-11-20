@@ -87,8 +87,20 @@ function streamState(overrides: Partial<UseStreamResult> = {}): UseStreamResult 
   };
 }
 
+// Next 15 passes route params as a Promise. Marking it fulfilled lets React's
+// `use()` read the value synchronously, so the page renders without Suspense.
+function resolvedParams(id: string): Promise<{ id: string }> {
+  const promise = Promise.resolve({ id }) as Promise<{ id: string }> & {
+    status?: "fulfilled";
+    value?: { id: string };
+  };
+  promise.status = "fulfilled";
+  promise.value = { id };
+  return promise;
+}
+
 function renderPage(id = "42") {
-  return render(<StreamDetailPage params={{ id }} />);
+  return render(<StreamDetailPage params={resolvedParams(id)} />);
 }
 
 describe("StreamDetailLayout — invalid id", () => {
@@ -96,16 +108,16 @@ describe("StreamDetailLayout — invalid id", () => {
     hooks.notFound.mockClear();
   });
 
-  it("routes a non-numeric id to the not-found page before the client page mounts", () => {
-    expect(() =>
-      StreamDetailLayout({ params: { id: "abc" }, children: <div>page</div> }),
-    ).toThrow("NEXT_NOT_FOUND");
+  it("routes a non-numeric id to the not-found page before the client page mounts", async () => {
+    await expect(
+      StreamDetailLayout({ params: resolvedParams("abc"), children: <div>page</div> }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(hooks.notFound).toHaveBeenCalledTimes(1);
   });
 
-  it("lets a numeric id through to the page", () => {
+  it("lets a numeric id through to the page", async () => {
     const children = <div>page</div>;
-    expect(StreamDetailLayout({ params: { id: "42" }, children })).toBe(children);
+    await expect(StreamDetailLayout({ params: resolvedParams("42"), children })).resolves.toBe(children);
     expect(hooks.notFound).not.toHaveBeenCalled();
   });
 });

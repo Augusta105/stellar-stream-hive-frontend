@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useStream } from "@/hooks/useStream";
@@ -25,8 +26,9 @@ import { getStreamContractId, isStreamContractConfigured } from "@/lib/contracts
 import { AVERAGE_LEDGER_SECONDS } from "@/lib/streaming";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 
-export default function StreamDetailPage({ params }: { params: { id: string } }) {
-  const { stream, isLoading, error, notConfigured, refetch } = useStream(params.id);
+export default function StreamDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { stream, isLoading, error, notConfigured, refetch } = useStream(id);
   const wallet = useWallet();
 
   if (isLoading) {
