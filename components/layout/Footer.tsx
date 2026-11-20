@@ -1,5 +1,8 @@
 import { NETWORK, STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 
+/** Security Model docs live with the contracts; wording matches those docs. */
+export const SECURITY_MODEL_URL = "https://github.com/Stellar-Hive/stellar-stream-hive-contract";
+
 export function Footer() {
   const streamContractId = process.env.NEXT_PUBLIC_STREAM_CONTRACT_ID;
 
@@ -8,6 +11,18 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
         <div className="flex flex-col items-center gap-1 text-center sm:items-start sm:text-left">
           <p>Stellar Stream Hive — an open-source Stellar Development Foundation grant project.</p>
+          <p className="text-xs">
+            The smart contracts are unaudited. Use at your own risk.{" "}
+            <a
+              href={SECURITY_MODEL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline transition hover:text-white"
+            >
+              Read the Security Model
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </p>
           <p className="font-mono text-xs">
             Network: {NETWORK}
             {streamContractId && STELLAR_EXPERT_NETWORK && (
