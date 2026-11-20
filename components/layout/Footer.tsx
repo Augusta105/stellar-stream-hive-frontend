@@ -31,7 +31,7 @@ export function Footer() {
                 <a
                   href={`https://stellar.expert/explorer/${STELLAR_EXPERT_NETWORK}/contract/${streamContractId}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="underline transition hover:text-white"
                 >
                   Stream contract
@@ -45,7 +45,7 @@ export function Footer() {
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-contract"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-white"
           >
             Contracts
@@ -54,7 +54,7 @@ export function Footer() {
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-api"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-white"
           >
             API
@@ -63,7 +63,7 @@ export function Footer() {
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-frontend"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-white"
           >
             Frontend
