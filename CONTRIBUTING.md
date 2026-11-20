@@ -51,6 +51,13 @@ Contract-calling features (create/withdraw/cancel a stream) require
 only working on UI/UX that doesn't touch live contract state, you can leave these unset — the
 app will show a clear "not yet configured" state rather than erroring.
 
+### Dev container (optional)
+
+If you use VS Code or GitHub Codespaces, `.devcontainer/devcontainer.json` gives you a ready
+environment: Node 20 (matching `.nvmrc`), `npm ci` run on create, port 3000 forwarded to the
+Next.js dev server, and the recommended editor extensions from `.vscode/extensions.json`.
+Open the repo and choose **Reopen in Container**.
+
 ## Running against a local API and testnet contracts
 
 The app shows real streams only when it can reach an indexer API. To try the full flow:
