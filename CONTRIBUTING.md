@@ -136,11 +136,41 @@ logic under `lib/`, add or update a unit test next to it. If you touched `lib/st
 `lib/format.ts`, please also double check the BigInt math with a couple of manual examples —
 these functions are load-bearing for correctness across the whole app.
 
-## Commit style
+## Branch names
 
-Use clear, present-tense commit messages describing *why* a change was made where it's not
-obvious from the diff (e.g. `fix: clamp withdrawable to zero before a stream's cliff` rather
-than `fix bug`).
+Branch from `main` and name the branch `<type>/<short-description>`, where `<type>` is one of
+the commit prefixes below and the description is a few lowercase words separated by hyphens.
+Include the issue number when the branch fixes one:
+
+- `fix/16-19-explorer-withdrawable-horizon-lint`
+- `test/issues-28-29-freighter-stellar-tests`
+- `docs/280-281-282-283-docs-and-architecture`
+
+## Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) prefixes. These are the ones
+already used in this repository's history:
+
+| Prefix | Use it for |
+| --- | --- |
+| `fix:` | A bug fix in app behaviour |
+| `feat:` | A new user-visible feature or capability |
+| `test:` | Adding or changing tests without changing app behaviour |
+| `perf:` | A change made for speed or fewer requests, with no change in results |
+| `chore:` | Tooling, lint configuration, dependencies and cleanup |
+| `docs:` | Documentation only, such as this file, the README and `docs/` |
+
+Write the subject in the present tense and keep it short, for example
+`fix: clamp withdrawable to zero before a stream's cliff` rather than `fix bug`. Describe *why*
+the change was made in the body when that is not obvious from the diff.
+
+## Referencing issues
+
+- In a commit message, add `Closes #<number>` on its own line when the commit completes an issue.
+  Use `Refs #<number>` when the commit only contributes to one.
+- In the pull request description, list each issue with `Closes #<number>` so GitHub links the
+  PR to the issue and closes it on merge.
+- If a change has no matching issue, leave the reference out rather than inventing one.
 
 ## Reporting issues
 
