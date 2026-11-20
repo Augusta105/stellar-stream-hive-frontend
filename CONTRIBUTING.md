@@ -108,7 +108,7 @@ these functions are load-bearing for correctness across the whole app.
 
 ## Commit style
 
-Use clear, present-tense commit messages describing *why* a change was made where it's not
+Use clear, present-tense commit messages describing _why_ a change was made where it's not
 obvious from the diff (e.g. `fix: clamp withdrawable to zero before a stream's cliff` rather
 than `fix bug`).
 
