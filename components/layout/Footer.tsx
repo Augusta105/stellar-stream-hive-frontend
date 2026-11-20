@@ -1,11 +1,13 @@
 import { NETWORK, STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { buildReportIssueUrl } from "@/lib/reportIssue";
+import { formatBuildLabel, getBuildInfo } from "@/lib/buildInfo";
 
 export function Footer() {
   const streamContractId = process.env.NEXT_PUBLIC_STREAM_CONTRACT_ID;
+  const build = getBuildInfo(process.env.NEXT_PUBLIC_APP_VERSION, process.env.NEXT_PUBLIC_APP_COMMIT);
   const reportIssueUrl = buildReportIssueUrl({
-    appVersion: process.env.NEXT_PUBLIC_APP_VERSION || "dev",
-    appCommit: process.env.NEXT_PUBLIC_APP_COMMIT || "dev",
+    appVersion: build.version,
+    appCommit: build.commit,
     network: NETWORK,
     contractIds: {
       Stream: process.env.NEXT_PUBLIC_STREAM_CONTRACT_ID,
@@ -19,7 +21,9 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
         <div className="flex flex-col items-center gap-1 text-center sm:items-start sm:text-left">
           <p>Stellar Stream Hive — an open-source Stellar Development Foundation grant project.</p>
-          <p className="font-mono text-xs">
+          <p className="font-mono text-xs" data-testid="build-info">
+            {formatBuildLabel(build)}
+            {" · "}
             Network: {NETWORK}
             {streamContractId && STELLAR_EXPERT_NETWORK && (
               <>
