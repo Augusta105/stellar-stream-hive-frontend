@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 import { RecipientInput } from "@/components/create/RecipientInput";
@@ -48,6 +48,8 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ streamId: string; hash: string } | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const isRecipientValid =
     isValidRecipientAddress(recipient) && checkRecipientNotSender(recipient, wallet.publicKey).ok;
@@ -67,11 +69,58 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
     wallet.isConnected &&
     isStreamContractConfigured();
 
-  async function handleSubmit() {
-    // The submit button only renders once the wallet is connected, so the sender is set here.
-    const sender = wallet.publicKey;
-    if (!sender || !canSubmit) return;
+  // Build the list of validation errors for the summary
+  const summaryErrors: { message: string; fieldId: string }[] = [];
+  if (!wallet.isConnected) {
+    summaryErrors.push({ message: "Connect your wallet to continue.", fieldId: "wallet-section" });
+  }
+  if (wallet.isConnected && !isRecipientValid) {
+    const reason =
+      recipient.length === 0
+        ? "Recipient address is required."
+        : !isValidRecipientAddress(recipient)
+        ? "Recipient address is not a valid Stellar account address."
+        : "Recipient cannot be the same as the sender.";
+    summaryErrors.push({ message: reason, fieldId: "recipient-field" });
+  }
+  if (!isAmountValid) {
+    summaryErrors.push({
+      message: amountCheck.reason ?? "Enter a valid amount.",
+      fieldId: "amount-field",
+    });
+  }
+  if (!isTokenValid) {
+    summaryErrors.push({ message: "Select a valid token.", fieldId: "amount-field" });
+  }
+  if (!isScheduleValid) {
+    summaryErrors.push({
+      message: "Check the stream schedule: end must be after start, and cliff must be between start and end.",
+      fieldId: "schedule-field",
+    });
+  }
 
+  // Focus summary when it appears
+  useEffect(() => {
+    if (showSummary && summaryRef.current) {
+      summaryRef.current.focus();
+    }
+  }, [showSummary]);
+
+  // Hide summary once all errors are resolved
+  useEffect(() => {
+    if (canSubmit) setShowSummary(false);
+  }, [canSubmit]);
+
+  async function handleSubmit() {
+    if (!canSubmit) {
+      setShowSummary(true);
+      return;
+    }
+
+    const sender = wallet.publicKey;
+    if (!sender) return;
+
+    setShowSummary(false);
     setError(null);
     setStatus("creating");
     try {
@@ -150,12 +199,35 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
   }
 
   const isBusy = status === "creating";
-
   const contractsConfigured = isStreamContractConfigured();
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
       <div className="card space-y-6">
+        {showSummary && summaryErrors.length > 0 && (
+          <div
+            ref={summaryRef}
+            role="alert"
+            aria-label="Form errors"
+            tabIndex={-1}
+            className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger focus:outline-none"
+          >
+            <p className="mb-2 font-semibold">Please fix the following errors before submitting:</p>
+            <ul className="list-disc space-y-1 pl-5">
+              {summaryErrors.map((e) => (
+                <li key={e.fieldId}>
+                  <a
+                    href={`#${e.fieldId}`}
+                    className="underline hover:text-danger/80 focus:outline-none focus:ring-1 focus:ring-danger"
+                  >
+                    {e.message}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {!contractsConfigured && (
           <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
             The Stream contract isn&apos;t configured for this environment yet (
@@ -163,22 +235,29 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
             preview a stream, but submitting will be disabled until a contract is deployed and configured.
           </div>
         )}
-        <RecipientInput value={recipient} onChange={setRecipient} senderAddress={wallet.publicKey} />
-        <AmountInput
-          amount={amount}
-          onAmountChange={setAmount}
-          token={token}
-          onTokenChange={setToken}
-          onLookupChange={setIsLookingUpToken}
-        />
-        <ScheduleInput
-          startDate={startDate}
-          onStartDateChange={setStartDate}
-          cliffDate={cliffDate}
-          onCliffDateChange={setCliffDate}
-          endDate={endDate}
-          onEndDateChange={setEndDate}
-        />
+
+        <div id="recipient-field">
+          <RecipientInput value={recipient} onChange={setRecipient} senderAddress={wallet.publicKey} />
+        </div>
+        <div id="amount-field">
+          <AmountInput
+            amount={amount}
+            onAmountChange={setAmount}
+            token={token}
+            onTokenChange={setToken}
+            onLookupChange={setIsLookingUpToken}
+          />
+        </div>
+        <div id="schedule-field">
+          <ScheduleInput
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            cliffDate={cliffDate}
+            onCliffDateChange={setCliffDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+          />
+        </div>
 
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm">
@@ -204,12 +283,28 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
         )}
 
         {!wallet.isConnected ? (
-          <button type="button" onClick={wallet.connect} disabled={wallet.isConnecting} className="btn-primary w-full">
-            {wallet.isConnecting ? <Spinner label="Connecting" /> : "Connect wallet to continue"}
-          </button>
+          <div id="wallet-section">
+            <button type="button" onClick={wallet.connect} disabled={wallet.isConnecting} className="btn-primary w-full">
+              {wallet.isConnecting ? (
+                <>
+                  <Spinner decorative />
+                  <span>Connecting</span>
+                </>
+              ) : (
+                "Connect wallet to continue"
+              )}
+            </button>
+          </div>
         ) : (
-          <button type="button" onClick={handleSubmit} disabled={!canSubmit || isBusy} className="btn-primary w-full">
-            {isBusy ? <Spinner label="Creating stream" /> : "Create stream"}
+          <button type="button" onClick={handleSubmit} disabled={isBusy} className="btn-primary w-full">
+            {isBusy ? (
+              <>
+                <Spinner decorative />
+                <span>Creating stream</span>
+              </>
+            ) : (
+              "Create stream"
+            )}
           </button>
         )}
       </div>
@@ -219,9 +314,7 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
         amount={amount}
         token={token}
         startDate={startDate}
-        cliffDate={cliffDate}
         endDate={endDate}
-        cancellable={cancellable}
       />
     </div>
   );
