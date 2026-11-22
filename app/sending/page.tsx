@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useStreamListPage } from "@/hooks/useStreamListPage";
 import { useWallet } from "@/hooks/useWallet";
-import { useStreams } from "@/hooks/useStreams";
 import { StreamCard } from "@/components/stream/StreamCard";
 import { StreamFilterBar } from "@/components/stream/StreamFilterBar";
 import { RefreshButton } from "@/components/stream/RefreshButton";
@@ -12,31 +11,28 @@ import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Spinner } from "@/components/ui/Spinner";
-import {
-  countByFilter,
-  filterStreams,
-  searchStreams,
-  sortStreams,
-  type StreamFilter,
-  type StreamSort,
-} from "@/lib/streamList";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { Spinner } from "@/components/ui/Spinner";
-import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import { formatTokenAmount } from "@/lib/format";
 import { groupOutgoingByToken } from "@/lib/outgoingTotals";
 
 export default function SendingPage() {
   const wallet = useWallet();
-  const { streams, isLoading, error, apiConfigured, lastUpdatedAt, refetch } = useStreams(wallet.publicKey, "sender");
-  const [filter, setFilter] = useState<StreamFilter>("all");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<StreamSort>("default");
-  const counts = useMemo(() => countByFilter(streams), [streams]);
-  const visibleStreams = useMemo(
-    () => sortStreams(searchStreams(filterStreams(streams, filter), query), sort),
-    [streams, filter, query, sort]
-  );
+  const {
+    streams,
+    isLoading,
+    error,
+    apiConfigured,
+    lastUpdatedAt,
+    refetch,
+    filter,
+    setFilter,
+    query,
+    setQuery,
+    sort,
+    setSort,
+    counts,
+    visibleStreams,
+  } = useStreamListPage(wallet.publicKey, "sender");
 
   if (!wallet.isConnected) {
     return (
