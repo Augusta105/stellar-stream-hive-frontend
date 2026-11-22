@@ -9,6 +9,8 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    setupFiles: ["./vitest.setup.ts"],
+    environmentMatchGlobs: [["components/**/*.test.tsx", "jsdom"]],
     include: ["lib/**/*.test.ts", "hooks/**/*.test.ts", "components/**/*.test.tsx"],
     coverage: {
       provider: "v8",
