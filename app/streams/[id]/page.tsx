@@ -25,6 +25,7 @@ import { getStreamContractId, isStreamContractConfigured } from "@/lib/contracts
 import { AVERAGE_LEDGER_SECONDS } from "@/lib/streaming";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { LedgerSnapshotProvider } from "@/hooks/useLedgerSnapshot";
+import { streamToJson, streamToCsv, csvFilename } from "@/lib/streamList";
 
 export default function StreamDetailPage({ params }: { params: { id: string } }) {
   const { stream, isLoading, error, notConfigured, refetch } = useStream(params.id);
@@ -93,6 +94,7 @@ export default function StreamDetailPage({ params }: { params: { id: string } })
             value={() => (typeof window !== "undefined" ? window.location.href : "")}
             label="Copy link"
           />
+          <ExportButtons stream={stream} />
           <StreamStatusBadge status={stream.status} />
         </div>
       </div>
@@ -255,6 +257,39 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <div className="mb-2 flex items-center justify-between text-sm last:mb-0">
       <span className="text-muted">{label}</span>
       <span>{value}</span>
+    </div>
+  );
+}
+
+function ExportButtons({ stream }: { stream: any }) {
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={() => downloadFile(streamToCsv(stream), csvFilename(`stream-${stream.id}`), "text/csv")}
+        className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-surface-hover print:hidden"
+        title="Download as CSV"
+      >
+        CSV
+      </button>
+      <button
+        onClick={() => downloadFile(streamToJson(stream), `stream-${stream.id}.json`, "application/json")}
+        className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-surface-hover print:hidden"
+        title="Download as JSON"
+      >
+        JSON
+      </button>
     </div>
   );
 }
