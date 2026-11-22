@@ -5,8 +5,10 @@ import {
   csvFilename,
   filterStreams,
   matchesFilter,
+  parseStreamListParams,
   searchStreams,
   sortStreams,
+  streamListParamsToSearchParams,
   streamsToCsv,
 } from "./streamList";
 import type { Stream, StreamStatus } from "@/types";
@@ -152,6 +154,42 @@ describe("csvCell", () => {
   });
   it("handles fields with both quotes and newlines", () => {
     expect(csvCell('line 1\nsay "hi"\nline 3')).toBe('"line 1\nsay ""hi""\nline 3"');
+  });
+});
+
+describe("parseStreamListParams", () => {
+  it("falls back to defaults for an empty query string", () => {
+    expect(parseStreamListParams(new URLSearchParams(""))).toEqual({ filter: "all", query: "", sort: "default" });
+  });
+  it("reads status, q and sort", () => {
+    expect(parseStreamListParams(new URLSearchParams("status=live&q=alice&sort=newest"))).toEqual({
+      filter: "live",
+      query: "alice",
+      sort: "newest",
+    });
+  });
+  it("ignores an unknown status or sort value", () => {
+    expect(parseStreamListParams(new URLSearchParams("status=bogus&sort=bogus"))).toEqual({
+      filter: "all",
+      query: "",
+      sort: "default",
+    });
+  });
+  it("passes a blank q through as an empty query", () => {
+    expect(parseStreamListParams(new URLSearchParams("q=")).query).toBe("");
+  });
+});
+
+describe("streamListParamsToSearchParams", () => {
+  it("is empty when every field is at its default", () => {
+    expect(streamListParamsToSearchParams({ filter: "all", query: "", sort: "default" }).toString()).toBe("");
+  });
+  it("round-trips through parseStreamListParams", () => {
+    const state = { filter: "cancelled" as const, query: "bob", sort: "largest" as const };
+    expect(parseStreamListParams(streamListParamsToSearchParams(state))).toEqual(state);
+  });
+  it("omits q for a whitespace-only query", () => {
+    expect(streamListParamsToSearchParams({ filter: "all", query: "   ", sort: "default" }).toString()).toBe("");
   });
 });
 

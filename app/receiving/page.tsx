@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { useStreams } from "@/hooks/useStreams";
 import { StreamCard } from "@/components/stream/StreamCard";
@@ -10,18 +11,22 @@ import { TotalWithdrawable } from "@/components/stream/TotalWithdrawable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Spinner } from "@/components/ui/Spinner";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
+import { CopyButton } from "@/components/ui/CopyButton";
 import {
   countByFilter,
   filterStreams,
+  parseStreamListParams,
   searchStreams,
   sortStreams,
+  streamListParamsToSearchParams,
   type StreamFilter,
   type StreamSort,
 } from "@/lib/streamList";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { fetchWithdrawableOnChain, withdrawOnChain, ContractNotConfiguredError } from "@/lib/contracts";
 import { describeFreighterError } from "@/lib/freighter";
-import { stellarExpertTxUrl } from "@/lib/format";
+import { shortenAddress, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 
 interface WithdrawAllResult {
@@ -32,10 +37,16 @@ interface WithdrawAllResult {
 
 export default function ReceivingPage() {
   const wallet = useWallet();
-  const { streams, isLoading, error, apiConfigured, refetch } = useStreams(wallet.publicKey, "recipient");
-  const [filter, setFilter] = useState<StreamFilter>("all");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<StreamSort>("default");
+  const { streams, isLoading, error, apiConfigured, total, hasMore, isLoadingMore, loadMore, refetch } = useStreams(
+    wallet.publicKey,
+    "recipient"
+  );
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [filter, setFilter] = useState<StreamFilter>(() => parseStreamListParams(searchParams).filter);
+  const [query, setQuery] = useState(() => parseStreamListParams(searchParams).query);
+  const [sort, setSort] = useState<StreamSort>(() => parseStreamListParams(searchParams).sort);
   const counts = useMemo(() => countByFilter(streams), [streams]);
   const visibleStreams = useMemo(
     () => sortStreams(searchStreams(filterStreams(streams, filter), query), sort),
@@ -43,6 +54,16 @@ export default function ReceivingPage() {
   );
   const [withdrawAllStatus, setWithdrawAllStatus] = useState<"idle" | "running" | "done">("idle");
   const [withdrawAllResults, setWithdrawAllResults] = useState<WithdrawAllResult[]>([]);
+
+  useEffect(() => {
+    const search = streamListParamsToSearchParams({ filter, query, sort }).toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+  }, [filter, query, sort, pathname, router]);
+
+  function clearFilters() {
+    setFilter("all");
+    setQuery("");
+  }
 
   if (!wallet.isConnected) {
     return (
@@ -188,13 +209,39 @@ export default function ReceivingPage() {
           }
         />
       ) : visibleStreams.length === 0 ? (
-        <EmptyState title="No matching streams" description="Try a different status filter or search." />
+        <EmptyState
+          title="No streams match your filters"
+          description="Try a different status filter or search term."
+          action={
+            <button type="button" onClick={clearFilters} className="btn-secondary">
+              Clear filters
+            </button>
+          }
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleStreams.map((stream) => (
-            <StreamCard key={stream.id} stream={stream} role="recipient" />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleStreams.map((stream) => (
+              <StreamCard key={stream.id} stream={stream} role="recipient" />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="text-sm text-muted">
+                Showing {streams.length} of {total ?? streams.length}
+              </p>
+              <button type="button" onClick={loadMore} disabled={isLoadingMore} className="btn-secondary">
+                {isLoadingMore ? (
+                  <>
+                    <Spinner size="sm" /> Loading…
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

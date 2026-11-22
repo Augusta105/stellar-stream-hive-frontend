@@ -121,6 +121,51 @@ async function fetchStreamList(path: string): Promise<Stream[]> {
   return withTokenMetadata(views.map((v) => mapApiStream(v, reference, resolveToken)));
 }
 
+export interface StreamsPage {
+  streams: Stream[];
+  /** From `X-Total-Count`; null when the server didn't send it. */
+  total: number | null;
+  /** Whether another page can be fetched at `offset + streams.length`. */
+  hasMore: boolean;
+}
+
+/**
+ * Fetches a single page (up to `PAGE_SIZE`) of a paginated list endpoint, for callers that want to
+ * load more incrementally (a "Load more" control) instead of `fetchAllPages`' full walk.
+ */
+async function fetchStreamsPage(path: string, offset: number): Promise<StreamsPage> {
+  const [res, reference] = await Promise.all([
+    apiFetchResponse(`${path}?limit=${PAGE_SIZE}&offset=${offset}`),
+    fetchLedgerReference(),
+  ]);
+  if (!res) return { streams: [], total: null, hasMore: false };
+
+  let batch: ApiStreamView[];
+  try {
+    batch = (await res.json()) as ApiStreamView[];
+  } catch {
+    return { streams: [], total: null, hasMore: false };
+  }
+
+  const totalHeader = Number(res.headers.get("x-total-count"));
+  const total = Number.isFinite(totalHeader) ? totalHeader : null;
+  const resolveToken = makeTokenResolver(nativeTokenContractId());
+  const streams = await withTokenMetadata(batch.map((v) => mapApiStream(v, reference, resolveToken)));
+  const loadedSoFar = offset + batch.length;
+  const hasMore = batch.length === PAGE_SIZE && (total === null || loadedSoFar < total);
+  return { streams, total, hasMore };
+}
+
+/** Fetches one page of streams where `address` is the sender, for "Load more" pagination. */
+export async function fetchStreamsBySenderPage(address: string, offset = 0): Promise<StreamsPage> {
+  return fetchStreamsPage(`/senders/${encodeURIComponent(address)}`, offset);
+}
+
+/** Fetches one page of streams where `address` is the recipient, for "Load more" pagination. */
+export async function fetchStreamsByRecipientPage(address: string, offset = 0): Promise<StreamsPage> {
+  return fetchStreamsPage(`/recipients/${encodeURIComponent(address)}`, offset);
+}
+
 /** Fetches streams where `address` is the sender. */
 export async function fetchStreamsBySender(address: string): Promise<Stream[]> {
   return fetchStreamList(`/senders/${encodeURIComponent(address)}`);
