@@ -6,6 +6,7 @@ import { describeFreighterError } from "@/lib/freighter";
 import { formatBaseUnits, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { checkAmount } from "@/lib/validation";
+import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 
 type Status = "idle" | "checking" | "signing" | "submitting" | "success" | "error";
@@ -92,7 +93,9 @@ export function WithdrawButton({
     setIsFillingMax(true);
     try {
       const actualWithdrawable = await fetchWithdrawableOnChain(streamId);
-      setCustomAmount(formatBaseUnits(actualWithdrawable, tokenDecimals, { maxDecimals: tokenDecimals, grouped: false }));
+      setCustomAmount(
+        formatBaseUnits(actualWithdrawable, tokenDecimals, { maxDecimals: tokenDecimals, grouped: false })
+      );
     } catch (err) {
       if (err instanceof ContractNotConfiguredError) {
         setError(err.message);
@@ -106,9 +109,9 @@ export function WithdrawButton({
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="btn-primary">
+      <Button onClick={() => setOpen(true)}>
         Withdraw
-      </button>
+      </Button>
     );
   }
 
@@ -123,17 +126,18 @@ export function WithdrawButton({
               <a
                 href={explorerUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="mt-2 inline-block text-sm text-accent underline"
               >
                 View transaction on Stellar Expert
+                <span className="sr-only"> (opens in a new tab)</span>
               </a>
             )
           );
         })()}
-        <button
-          type="button"
-          className="btn-secondary mt-4 w-full"
+        <Button
+          variant="secondary"
+          className="mt-4 w-full"
           onClick={() => {
             setOpen(false);
             setStatus("idle");
@@ -143,7 +147,7 @@ export function WithdrawButton({
           }}
         >
           Close
-        </button>
+        </Button>
       </div>
     );
   }
@@ -187,12 +191,7 @@ export function WithdrawButton({
             onChange={(e) => setCustomAmount(e.target.value)}
             className="input-field flex-1"
           />
-          <button
-            type="button"
-            onClick={handleFillMax}
-            disabled={isBusy || isFillingMax}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={handleFillMax} disabled={isBusy || isFillingMax} className="btn-secondary">
             {isFillingMax ? <Spinner size="sm" /> : "Max"}
           </button>
         </div>
@@ -213,14 +212,9 @@ export function WithdrawButton({
             "Confirm withdrawal"
           )}
         </button>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          disabled={isBusy}
-          className="btn-secondary"
-        >
+        <button type="button" onClick={() => setOpen(false)} disabled={isBusy} className="btn-secondary">
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

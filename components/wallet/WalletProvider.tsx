@@ -11,8 +11,11 @@ import {
   type ReactNode,
 } from 'react';
 import type { UseWalletResult } from '@/hooks/useWallet';
+import { NETWORK } from '@/lib/stellar';
 
-const WalletContext = createContext<UseWalletResult | null>(null);
+export type WalletContextValue = UseWalletResult;
+
+export const WalletContext = createContext<WalletContextValue | null>(null);
 
 export interface WalletProviderProps {
   children: ReactNode;
@@ -31,16 +34,18 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   const checkFreighterInstalled = useCallback(async () => {
     try {
-      if (typeof window === 'undefined') {
+      if (typeof window === "undefined") {
         return false;
       }
-      const freighter = (window as unknown as {
-        freighter?: { isConnected?: () => Promise<boolean> };
-      }).freighter;
+      const freighter = (
+        window as unknown as {
+          freighter?: { isConnected?: () => Promise<boolean> };
+        }
+      ).freighter;
       if (!freighter) {
         return false;
       }
-      if (typeof freighter.isConnected === 'function') {
+      if (typeof freighter.isConnected === "function") {
         return await freighter.isConnected();
       }
       return true;
@@ -53,35 +58,37 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setIsConnecting(true);
     setError(null);
     try {
-      const freighter = (window as unknown as {
-        freighter?: {
-          requestAccess?: () => Promise<{ address?: string } | string>;
-          getNetwork?: () => Promise<string>;
-        };
-      }).freighter;
+      const freighter = (
+        window as unknown as {
+          freighter?: {
+            requestAccess?: () => Promise<{ address?: string } | string>;
+            getNetwork?: () => Promise<string>;
+          };
+        }
+      ).freighter;
 
       if (!freighter) {
-        setError('Freighter wallet is not installed.');
+        setError("Freighter wallet is not installed.");
         return;
       }
 
       let address: string | null = null;
-      if (typeof freighter.requestAccess === 'function') {
+      if (typeof freighter.requestAccess === "function") {
         const result = await freighter.requestAccess();
-        if (typeof result === 'string') {
+        if (typeof result === "string") {
           address = result;
-        } else if (result && typeof result.address === 'string') {
+        } else if (result && typeof result.address === "string") {
           address = result.address;
         }
       }
 
       if (!address) {
-        setError('Unable to retrieve wallet address.');
+        setError("Unable to retrieve wallet address.");
         return;
       }
 
       let currentNetwork: string | null = null;
-      if (typeof freighter.getNetwork === 'function') {
+      if (typeof freighter.getNetwork === "function") {
         try {
           currentNetwork = await freighter.getNetwork();
         } catch {
@@ -92,7 +99,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       setPublicKey(address);
       setNetwork(currentNetwork);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect wallet.');
+      setError(err instanceof Error ? err.message : "Failed to connect wallet.");
     } finally {
       setIsConnecting(false);
     }
@@ -159,21 +166,23 @@ export function WalletProvider({ children }: WalletProviderProps) {
       }
 
       try {
-        const freighter = (window as unknown as {
-          freighter?: {
-            getPublicKey?: () => Promise<string>;
-            getNetwork?: () => Promise<string>;
-          };
-        }).freighter;
+        const freighter = (
+          window as unknown as {
+            freighter?: {
+              getPublicKey?: () => Promise<string>;
+              getNetwork?: () => Promise<string>;
+            };
+          }
+        ).freighter;
 
-        if (freighter && typeof freighter.getPublicKey === 'function') {
+        if (freighter && typeof freighter.getPublicKey === "function") {
           const address = await freighter.getPublicKey();
           if (cancelled) {
             return;
           }
           if (address) {
             setPublicKey(address);
-            if (typeof freighter.getNetwork === 'function') {
+            if (typeof freighter.getNetwork === "function") {
               try {
                 const currentNetwork = await freighter.getNetwork();
                 if (!cancelled) {
@@ -274,18 +283,23 @@ export function WalletProvider({ children }: WalletProviderProps) {
   }, []);
 
   const value = useMemo<UseWalletResult>(
-    () => ({
-      isFreighterInstalled,
-      isDetecting,
-      publicKey,
-      network,
-      isConnecting,
-      error,
-      hydrated,
-      connect,
-      disconnect,
-      clearError,
-    }),
+    () => {
+      const isConnected = publicKey !== null;
+      return {
+        isFreighterInstalled,
+        isDetecting,
+        isConnected,
+        publicKey,
+        network,
+        // Only meaningful once connected: Freighter reports the network it is on.
+        isWrongNetwork: isConnected && network !== null && network !== NETWORK,
+        isConnecting,
+        error,
+        connect,
+        disconnect,
+        clearError,
+      };
+    },
     [
       isFreighterInstalled,
       isDetecting,
@@ -293,11 +307,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
       network,
       isConnecting,
       error,
-      hydrated,
       connect,
       disconnect,
       clearError,
-    ],
+    ]
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
@@ -306,7 +319,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
 export function useWalletContext(): UseWalletResult {
   const context = useContext(WalletContext);
   if (!context) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error("useWallet must be used within a WalletProvider");
   }
   return context;
 }
