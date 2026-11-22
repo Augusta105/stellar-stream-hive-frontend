@@ -25,6 +25,8 @@ import { fetchWithdrawableOnChain, withdrawOnChain, ContractNotConfiguredError }
 import { describeFreighterError } from "@/lib/freighter";
 import { shortenAddress, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
+import { CopyButton } from "@/components/ui/CopyButton";
 
 interface WithdrawAllResult {
   streamId: string;
@@ -175,6 +177,9 @@ export default function ReceivingPage() {
         />
       )}
 
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading ? "Loading streams…" : ""}
+      </div>
       {isLoading ? (
         <CardSkeletonGrid />
       ) : error ? (
@@ -195,11 +200,13 @@ export default function ReceivingPage() {
       ) : visibleStreams.length === 0 ? (
         <EmptyState title="No matching streams" description="Try a different status filter or search." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {visibleStreams.map((stream) => (
-            <StreamCard key={stream.id} stream={stream} role="recipient" />
+            <li key={stream.id}>
+              <StreamCard stream={stream} role="recipient" />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

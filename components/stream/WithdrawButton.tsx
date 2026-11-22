@@ -117,7 +117,7 @@ export function WithdrawButton({
 
   if (status === "success" && txHash) {
     return (
-      <div className="card border-primary/30 bg-primary/5">
+      <div role="status" className="card border-primary/30 bg-primary/5">
         <p className="font-semibold text-primary">Withdrawal submitted</p>
         {(() => {
           const explorerUrl = stellarExpertTxUrl(txHash, STELLAR_EXPERT_NETWORK);
@@ -197,7 +197,11 @@ export function WithdrawButton({
         </div>
       )}
 
-      {error && <p className="mb-3 text-sm text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="mb-3 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button type="button" onClick={handleWithdraw} disabled={isBusy} className="btn-primary flex-1">

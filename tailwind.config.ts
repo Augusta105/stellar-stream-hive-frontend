@@ -19,6 +19,9 @@ const config: Config = {
           DEFAULT: "#818cf8",
           dark: "#6366f1",
         },
+        // Contrast ratios (WCAG AA requires 4.5:1 for normal text):
+        // #8b93a7 on background #0b0e14 → 6.28:1 ✓
+        // #8b93a7 on surface    #12161f → 5.89:1 ✓
         muted: "#8b93a7",
         danger: "#f87171",
         warning: "#fbbf24",
