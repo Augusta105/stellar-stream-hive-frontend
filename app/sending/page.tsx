@@ -87,9 +87,9 @@ export default function SendingPage() {
               <p className="text-xs text-muted">Total outgoing commitment</p>
               <p className="mono-tabular text-xl font-bold text-primary">
                 {formatTokenAmount(
-                  outgoingByToken[0].amount,
-                  outgoingByToken[0].symbol,
-                  outgoingByToken[0].decimals,
+                  outgoingByToken[0]?.amount ?? 0n,
+                  outgoingByToken[0]?.symbol ?? "",
+                  outgoingByToken[0]?.decimals ?? 7,
                   4
                 )}
               </p>

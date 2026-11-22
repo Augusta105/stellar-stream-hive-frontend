@@ -47,9 +47,11 @@ export function TotalWithdrawable({ streams }: TotalWithdrawableProps) {
 
   // Only aggregate cleanly when every stream shares a token; mixed-token
   // portfolios are shown per-card instead of summed into one misleading number.
-  const symbol = streams[0].token.symbol;
-  const decimals = streams[0].token.decimals;
-  const sameToken = streams.every((s) => s.token.contractId === streams[0].token.contractId);
+  const firstStream = streams[0];
+  if (!firstStream) return null;
+  const symbol = firstStream.token.symbol;
+  const decimals = firstStream.token.decimals;
+  const sameToken = streams.every((s) => s.token.contractId === firstStream.token.contractId);
 
   if (!sameToken) return null;
 

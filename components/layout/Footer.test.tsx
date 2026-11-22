@@ -13,6 +13,7 @@ describe("Footer unaudited notice", () => {
 
   it("links to the Security Model in a new tab, with safe rel", () => {
     const link = findAll(notice, (el) => el.type === "a")[0];
+    if (!link) throw new Error("Expected a link in the notice");
     expect(link.props.href).toBe(SECURITY_MODEL_URL);
     expect(link.props.target).toBe("_blank");
     expect(link.props.rel).toBe("noopener noreferrer");
