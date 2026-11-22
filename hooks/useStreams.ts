@@ -11,6 +11,8 @@ export interface UseStreamsResult {
   isLoading: boolean;
   error: string | null;
   apiConfigured: boolean;
+  /** Time (ms) of the last successful fetch for the current address and role, or null if none yet. */
+  lastUpdatedAt: number | null;
   refetch: () => Promise<void>;
 }
 
@@ -23,19 +25,49 @@ export interface UseStreamsResult {
  * false so the page can explain why instead of pretending there's no data.
  */
 export function useStreams(address: string | null, role: StreamRole): UseStreamsResult {
-  const result = useAsync(
-    async (isStale: () => boolean) => {
+  const [streams, setStreams] = useState<Stream[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+
+  const load = useCallback(
+    async (isStale: () => boolean = () => false) => {
       if (!address) {
         return [];
       }
 
-      const streams =
-        role === "sender" ? await fetchStreamsBySender(address) : await fetchStreamsByRecipient(address);
-      if (isStale()) return null;
-      return streams;
+      setIsLoading(true);
+      setError(null);
+      try {
+        const results =
+          role === "sender" ? await fetchStreamsBySender(address) : await fetchStreamsByRecipient(address);
+        if (isStale()) return;
+        setStreams(results);
+        setLastUpdatedAt(Date.now());
+      } catch (err) {
+        if (isStale()) return;
+        // A failed page (including any page after the first in a paged fetch)
+        // rejects the whole request, so we never keep a partial list around.
+        setError(err instanceof Error ? err.message : "Failed to load streams.");
+        setStreams([]);
+      } finally {
+        if (!isStale()) setIsLoading(false);
+      }
     },
-    [address, role],
+    [address, role]
   );
 
-  return { streams: result.data ?? [], isLoading: result.isLoading, error: result.error, apiConfigured: isApiConfigured(), refetch: result.refetch };
+  useEffect(() => {
+    let ignore = false;
+    // A different address or role is a different list, so its freshness starts over.
+    setLastUpdatedAt(null);
+    load(() => ignore);
+    return () => {
+      ignore = true;
+    };
+  }, [load]);
+
+  const refetch = useCallback(() => load(), [load]);
+
+  return { streams, isLoading, error, apiConfigured: isApiConfigured(), lastUpdatedAt, refetch };
 }

@@ -43,7 +43,7 @@ export function useStream(id: string): UseStreamResult {
       }
       return fromChain;
     },
-    [id],
+    [id]
   );
 
   return { stream: result.data, isLoading: result.isLoading, error: result.error, notConfigured, refetch: result.refetch };

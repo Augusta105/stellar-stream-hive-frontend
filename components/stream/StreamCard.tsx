@@ -8,6 +8,7 @@ import { StreamStatusBadge } from "@/components/stream/StreamStatusBadge";
 import { LiveBalance } from "@/components/stream/LiveBalance";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { useLiveBalance } from "@/hooks/useLiveBalance";
+import { StartsInCountdown } from "@/components/stream/StartsInCountdown";
 
 export interface StreamCardProps {
   stream: Stream;
@@ -59,6 +60,10 @@ export function StreamCard({ stream, role, actions }: StreamCardProps) {
         <p className="text-xs text-muted" title={format(endDate, "PPpp")}>
           {endLabel}
         </p>
+      ) : null}
+
+      {stream.status === "scheduled" ? (
+        <StartsInCountdown startTime={stream.startTime} className="text-xs text-muted" />
       ) : null}
 
       {role === "recipient" ? (
