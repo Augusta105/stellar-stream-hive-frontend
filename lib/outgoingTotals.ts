@@ -1,40 +1,36 @@
-/**
- * Helpers for computing totals across the sender's active/scheduled streams,
- * grouped by token so the Sending page can show a per-token commitment summary.
- */
 import type { Stream } from "@/types";
 
-export interface OutgoingTokenGroup {
-  /** Stellar contract address of the token. */
+export interface OutgoingTotal {
   contractId: string;
-  /** Ticker symbol, e.g. "XLM". */
   symbol: string;
-  /** Number of decimals the token uses. */
   decimals: number;
-  /** Sum of `totalAmount` (base units) across all streams in this group. */
+  /** Unpaid commitment across the group (total minus withdrawn), in base units. */
   amount: bigint;
 }
 
 /**
- * Groups a list of streams by their token contract and sums the remaining
- * commitment (`totalAmount − withdrawnAmount`) for each token.
- *
- * Only call this with streams that are active / cliff / scheduled — completed
- * and cancelled streams no longer represent locked outgoing value.
+ * Sums each stream's unpaid commitment (total minus withdrawn, never below
+ * zero) per token, keeping different tokens separate. Amounts stay BigInt.
  */
-export function groupOutgoingByToken(streams: Stream[]): OutgoingTokenGroup[] {
-  const map = new Map<string, OutgoingTokenGroup>();
+export function groupOutgoingByToken(streams: Stream[]): OutgoingTotal[] {
+  const groups = new Map<string, OutgoingTotal>();
 
   for (const stream of streams) {
-    const { contractId, symbol, decimals } = stream.token;
     const remaining = BigInt(stream.totalAmount) - BigInt(stream.withdrawnAmount);
-    const existing = map.get(contractId);
+    const amount = remaining > 0n ? remaining : 0n;
+    const existing = groups.get(stream.token.contractId);
+
     if (existing) {
-      existing.amount += remaining;
+      existing.amount += amount;
     } else {
-      map.set(contractId, { contractId, symbol, decimals, amount: remaining });
+      groups.set(stream.token.contractId, {
+        contractId: stream.token.contractId,
+        symbol: stream.token.symbol,
+        decimals: stream.token.decimals,
+        amount,
+      });
     }
   }
 
-  return Array.from(map.values());
+  return [...groups.values()];
 }

@@ -3,9 +3,10 @@
 import { useState } from "react";
 
 interface CopyButtonProps {
-  /** The text to copy. Accepts a plain string or a zero-argument function that
-   * returns the string — useful for values that must be evaluated lazily at
-   * click time (e.g. `window.location.href`). */
+  /**
+   * Text to copy. A function is resolved at click time, which is needed for
+   * values only known in the browser (e.g. `() => window.location.href`).
+   */
   value: string | (() => string);
   label?: string;
   className?: string;
@@ -23,8 +24,7 @@ export function CopyButton({ value, label = "Copy", className = "" }: CopyButton
       if (typeof navigator === "undefined" || !navigator.clipboard) {
         return;
       }
-      const text = typeof value === "function" ? value() : value;
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(typeof value === "function" ? value() : value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

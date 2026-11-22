@@ -7,6 +7,8 @@ import { StreamCard } from "@/components/stream/StreamCard";
 import { StreamFilterBar } from "@/components/stream/StreamFilterBar";
 import { RefreshButton } from "@/components/stream/RefreshButton";
 import { TotalWithdrawable } from "@/components/stream/TotalWithdrawable";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Spinner } from "@/components/ui/Spinner";
@@ -23,8 +25,10 @@ import {
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { fetchWithdrawableOnChain, withdrawOnChain, ContractNotConfiguredError } from "@/lib/contracts";
 import { describeFreighterError } from "@/lib/freighter";
-import { stellarExpertTxUrl, shortenAddress } from "@/lib/format";
+import { shortenAddress, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
+import { CopyButton } from "@/components/ui/CopyButton";
 
 interface WithdrawAllResult {
   streamId: string;
@@ -34,7 +38,7 @@ interface WithdrawAllResult {
 
 export default function ReceivingPage() {
   const wallet = useWallet();
-  const { streams, isLoading, error, apiConfigured, refetch } = useStreams(wallet.publicKey, "recipient");
+  const { streams, isLoading, error, apiConfigured, lastUpdatedAt, refetch } = useStreams(wallet.publicKey, "recipient");
   const [filter, setFilter] = useState<StreamFilter>("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<StreamSort>("default");
@@ -50,7 +54,9 @@ export default function ReceivingPage() {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
         <h1 className="text-2xl font-bold">Streams you&apos;re receiving</h1>
-        <p className="mx-auto mt-3 max-w-sm text-muted">Connect your wallet to see streams where you&apos;re the recipient.</p>
+        <p className="mx-auto mt-3 max-w-sm text-muted">
+          Connect your wallet to see streams where you&apos;re the recipient.
+        </p>
         <div className="mt-6 flex justify-center">
           <ConnectButton />
         </div>
@@ -96,7 +102,7 @@ export default function ReceivingPage() {
           <p className="mt-1 text-muted">Streams where your connected wallet is the recipient.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <RefreshButton onRefresh={refetch} isLoading={isLoading} />
+          <RefreshButton onRefresh={refetch} isLoading={isLoading} lastUpdatedAt={lastUpdatedAt} />
           {withdrawableStreams.length > 0 && (
             <>
               <TotalWithdrawable streams={withdrawableStreams} />
@@ -134,12 +140,13 @@ export default function ReceivingPage() {
                   <span className="text-muted">Stream #{r.streamId}</span>
                   {r.hash ? (
                     <a
-                      href={stellarExpertTxUrl(r.hash, STELLAR_EXPERT_NETWORK) ?? "#"}
+                      href={stellarExpertTxUrl(r.hash, STELLAR_EXPERT_NETWORK) ?? undefined}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="text-accent underline"
                     >
                       View transaction
+                      <span className="sr-only"> (opens in a new tab)</span>
                     </a>
                   ) : (
                     <span className="text-danger">{r.error}</span>
@@ -172,6 +179,9 @@ export default function ReceivingPage() {
         />
       )}
 
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading ? "Loading streams…" : ""}
+      </div>
       {isLoading ? (
         <CardSkeletonGrid />
       ) : error ? (
@@ -184,7 +194,7 @@ export default function ReceivingPage() {
             wallet.isConnected && wallet.publicKey ? (
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <span className="font-mono text-sm text-muted">{shortenAddress(wallet.publicKey)}</span>
-                <CopyButton value={wallet.publicKey} label="Copy address" />
+                <CopyButton value={wallet.publicKey!} label="Copy address" />
               </div>
             ) : undefined
           }
@@ -192,11 +202,13 @@ export default function ReceivingPage() {
       ) : visibleStreams.length === 0 ? (
         <EmptyState title="No matching streams" description="Try a different status filter or search." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {visibleStreams.map((stream) => (
-            <StreamCard key={stream.id} stream={stream} role="recipient" />
+            <li key={stream.id}>
+              <StreamCard stream={stream} role="recipient" />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
