@@ -42,6 +42,17 @@ export function Footer() {
           </p>
         </div>
         <div className="flex items-center gap-4">
+          {docsUrl && (
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-white"
+            >
+              Docs
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          )}
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-contract"
             target="_blank"
