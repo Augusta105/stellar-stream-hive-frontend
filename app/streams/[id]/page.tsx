@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useStream } from "@/hooks/useStream";
@@ -8,6 +9,7 @@ import { LiveBalance } from "@/components/stream/LiveBalance";
 import { StreamProgress } from "@/components/stream/StreamProgress";
 import { StreamTimeline } from "@/components/stream/StreamTimeline";
 import { StreamStatusBadge } from "@/components/stream/StreamStatusBadge";
+import { StartsInCountdown } from "@/components/stream/StartsInCountdown";
 import { WithdrawButton } from "@/components/stream/WithdrawButton";
 import { CancelButton } from "@/components/stream/CancelButton";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -24,10 +26,10 @@ import {
 import { getStreamContractId, isStreamContractConfigured } from "@/lib/contracts";
 import { AVERAGE_LEDGER_SECONDS } from "@/lib/streaming";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
-import { LedgerSnapshotProvider } from "@/hooks/useLedgerSnapshot";
 
-export default function StreamDetailPage({ params }: { params: { id: string } }) {
-  const { stream, isLoading, error, notConfigured, refetch } = useStream(params.id);
+export default function StreamDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { stream, isLoading, error, notConfigured, refetch } = useStream(id);
   const wallet = useWallet();
 
   if (isLoading) {
@@ -81,33 +83,37 @@ export default function StreamDetailPage({ params }: { params: { id: string } })
   const backLabel = isSender ? "Back to sending" : isRecipient ? "Back to receiving" : "Back home";
 
   return (
-    <LedgerSnapshotProvider enabled={isActive}>
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-        <div className="mb-6 flex items-center justify-between">
-          <Link href={backHref} className="text-sm text-muted hover:text-white">
-            ← {backLabel}
-          </Link>
-          <div className="flex items-center gap-3">
-            <CopyButton value={() => (typeof window !== "undefined" ? window.location.href : "")} label="Copy link" />
-            <StreamStatusBadge status={stream.status} />
-          </div>
+    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <div className="mb-6 flex items-center justify-between">
+        <Link href={backHref} className="text-sm text-muted hover:text-white">
+          ← {backLabel}
+        </Link>
+        <div className="flex items-center gap-3">
+          <CopyButton
+            value={() => (typeof window !== "undefined" ? window.location.href : "")}
+            label="Copy link"
+          />
+          <StreamStatusBadge status={stream.status} />
         </div>
 
-        <div className="card mb-6">
-          <div className="mb-1 flex items-center gap-1 text-xs text-muted">
-            <span>Stream #{stream.id}</span>
-            <CopyButton value={stream.id} label="Copy ID" />
-          </div>
-          <LiveBalance
-            totalAmount={stream.totalAmount}
-            withdrawnAmount={stream.withdrawnAmount}
-            startLedger={stream.startLedger}
-            endLedger={stream.endLedger}
-            cliffLedger={stream.cliffLedger}
-            tokenSymbol={stream.token.symbol}
-            tokenDecimals={stream.token.decimals}
-            enabled={isActive}
-          />
+      <div className="card mb-6">
+        {stream.status === "scheduled" ? (
+          <StartsInCountdown startTime={stream.startTime} className="mb-2 block text-sm text-muted" />
+        ) : null}
+        <div className="mb-1 flex items-center gap-1 text-xs text-muted">
+          <span>Stream #{stream.id}</span>
+          <CopyButton value={stream.id} label="Copy ID" />
+        </div>
+        <LiveBalance
+          totalAmount={stream.totalAmount}
+          withdrawnAmount={stream.withdrawnAmount}
+          startLedger={stream.startLedger}
+          endLedger={stream.endLedger}
+          cliffLedger={stream.cliffLedger}
+          tokenSymbol={stream.token.symbol}
+          tokenDecimals={stream.token.decimals}
+          enabled={isActive}
+        />
 
           <div className="my-6">
             <StreamTimeline
@@ -210,7 +216,11 @@ export default function StreamDetailPage({ params }: { params: { id: string } })
           <p className="mt-4 text-sm text-muted">Connect your wallet to withdraw or manage this stream.</p>
         )}
       </div>
-    </LedgerSnapshotProvider>
+
+      {!wallet.isConnected && (
+        <p className="mt-4 text-sm text-muted">Connect your wallet to withdraw or manage this stream.</p>
+      )}
+    </div>
   );
 }
 

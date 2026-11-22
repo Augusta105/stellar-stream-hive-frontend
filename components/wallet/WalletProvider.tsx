@@ -1,9 +1,20 @@
-"use client";
+'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { UseWalletResult } from "@/hooks/useWallet";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import type { UseWalletResult } from '@/hooks/useWallet';
+import { NETWORK } from '@/lib/stellar';
 
-const WalletContext = createContext<UseWalletResult | null>(null);
+export type WalletContextValue = UseWalletResult;
+
+export const WalletContext = createContext<WalletContextValue | null>(null);
 
 export interface WalletProviderProps {
   children: ReactNode;
@@ -165,18 +176,23 @@ export function WalletProvider({ children }: WalletProviderProps) {
   }, [checkFreighterInstalled]);
 
   const value = useMemo<UseWalletResult>(
-    () => ({
-      isFreighterInstalled,
-      isDetecting,
-      publicKey,
-      network,
-      isConnecting,
-      error,
-      hydrated,
-      connect,
-      disconnect,
-      clearError,
-    }),
+    () => {
+      const isConnected = publicKey !== null;
+      return {
+        isFreighterInstalled,
+        isDetecting,
+        isConnected,
+        publicKey,
+        network,
+        // Only meaningful once connected: Freighter reports the network it is on.
+        isWrongNetwork: isConnected && network !== null && network !== NETWORK,
+        isConnecting,
+        error,
+        connect,
+        disconnect,
+        clearError,
+      };
+    },
     [
       isFreighterInstalled,
       isDetecting,
@@ -184,7 +200,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
       network,
       isConnecting,
       error,
-      hydrated,
       connect,
       disconnect,
       clearError,
