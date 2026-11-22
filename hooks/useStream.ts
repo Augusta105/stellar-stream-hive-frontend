@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useAsync } from "@/hooks/useAsync";
 import { fetchStreamById } from "@/lib/api";
 import { fetchStreamOnChain, isStreamContractConfigured } from "@/lib/contracts";
 import type { Stream } from "@/types";
@@ -22,75 +23,32 @@ const STALE_MS = 30_000;
  * unavailable or doesn't know about the stream yet.
  */
 export function useStream(id: string): UseStreamResult {
-  const [stream, setStream] = useState<Stream | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const lastFetchedAtRef = useRef<number | null>(null);
 
-  const load = useCallback(
-    async (isStale?: () => boolean) => {
-      const stale = () => isStale?.() ?? false;
-      setIsLoading(true);
-      setError(null);
+  const result = useAsync(
+    async (isStale: () => boolean) => {
       setNotConfigured(false);
-      try {
-        const fromApi = await fetchStreamById(id);
-        if (stale()) return;
-        if (fromApi) {
-          setStream(fromApi);
-          lastFetchedAtRef.current = Date.now();
-          return;
-        }
-
-        if (!isStreamContractConfigured()) {
-          setNotConfigured(true);
-          setStream(null);
-          return;
-        }
-
-        const fromChain = await fetchStreamOnChain(id);
-        if (stale()) return;
-        if (!fromChain) {
-          setError("Stream not found.");
-          setStream(null);
-          return;
-        }
-        setStream(fromChain);
-        lastFetchedAtRef.current = Date.now();
-      } catch (err) {
-        if (stale()) return;
-        setError(err instanceof Error ? err.message : "Failed to load stream.");
-        setStream(null);
-      } finally {
-        if (!stale()) setIsLoading(false);
+      const fromApi = await fetchStreamById(id);
+      if (isStale()) return null;
+      if (fromApi) {
+        return fromApi;
       }
+
+      if (!isStreamContractConfigured()) {
+        setNotConfigured(true);
+        return null;
+      }
+
+      const fromChain = await fetchStreamOnChain(id);
+      if (isStale()) return null;
+      if (!fromChain) {
+        throw new Error("Stream not found.");
+      }
+      return fromChain;
     },
-    [id],
+    [id]
   );
 
-  useEffect(() => {
-    let ignore = false;
-    load(() => ignore);
-    return () => {
-      ignore = true;
-    };
-  }, [load]);
-
-  useEffect(() => {
-    function onVisibilityChange() {
-      if (document.visibilityState !== "visible") return;
-      const lastFetchedAt = lastFetchedAtRef.current;
-      if (lastFetchedAt !== null && Date.now() - lastFetchedAt < STALE_MS) return;
-      load();
-    }
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [load]);
-
-  const refetch = useCallback(async () => {
-    await load();
-  }, [load]);
-
-  return { stream, isLoading, error, notConfigured, refetch };
+  return { stream: result.data, isLoading: result.isLoading, error: result.error, notConfigured, refetch: result.refetch };
 }

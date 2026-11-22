@@ -3,7 +3,11 @@
 import { useState } from "react";
 
 interface CopyButtonProps {
-  value: string;
+  /**
+   * Text to copy. A function is resolved at click time, which is needed for
+   * values only known in the browser (e.g. `() => window.location.href`).
+   */
+  value: string | (() => string);
   label?: string;
   className?: string;
 }
@@ -20,7 +24,7 @@ export function CopyButton({ value, label = "Copy", className = "" }: CopyButton
       if (typeof navigator === "undefined" || !navigator.clipboard) {
         return;
       }
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(typeof value === "function" ? value() : value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -34,7 +38,7 @@ export function CopyButton({ value, label = "Copy", className = "" }: CopyButton
       <button
         type="button"
         onClick={handleCopy}
-        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted transition hover:bg-surface-hover hover:text-white ${className}`}
+        className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md p-2 text-xs text-muted transition hover:bg-surface-hover hover:text-white ${className}`}
         aria-label={label === "Copy" ? "Copy to clipboard" : label}
       >
         {copied ? (

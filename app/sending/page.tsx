@@ -9,10 +9,10 @@ import { StreamCard } from "@/components/stream/StreamCard";
 import { StreamFilterBar } from "@/components/stream/StreamFilterBar";
 import { RefreshButton } from "@/components/stream/RefreshButton";
 import { CancelButton } from "@/components/stream/CancelButton";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Spinner } from "@/components/ui/Spinner";
-import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import {
   countByFilter,
   filterStreams,
@@ -24,21 +24,17 @@ import {
   type StreamSort,
 } from "@/lib/streamList";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { Spinner } from "@/components/ui/Spinner";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import { formatTokenAmount } from "@/lib/format";
 import { groupOutgoingByToken } from "@/lib/outgoingTotals";
 
 export default function SendingPage() {
   const wallet = useWallet();
-  const { streams, isLoading, error, apiConfigured, total, hasMore, isLoadingMore, loadMore, refetch } = useStreams(
-    wallet.publicKey,
-    "sender"
-  );
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [filter, setFilter] = useState<StreamFilter>(() => parseStreamListParams(searchParams).filter);
-  const [query, setQuery] = useState(() => parseStreamListParams(searchParams).query);
-  const [sort, setSort] = useState<StreamSort>(() => parseStreamListParams(searchParams).sort);
+  const { streams, isLoading, error, apiConfigured, lastUpdatedAt, refetch } = useStreams(wallet.publicKey, "sender");
+  const [filter, setFilter] = useState<StreamFilter>("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<StreamSort>("default");
   const counts = useMemo(() => countByFilter(streams), [streams]);
   const visibleStreams = useMemo(
     () => sortStreams(searchStreams(filterStreams(streams, filter), query), sort),
@@ -67,7 +63,9 @@ export default function SendingPage() {
     );
   }
 
-  const activeStreams = streams.filter((s) => s.status === "active" || s.status === "cliff" || s.status === "scheduled");
+  const activeStreams = streams.filter(
+    (s) => s.status === "active" || s.status === "cliff" || s.status === "scheduled"
+  );
   const outgoingByToken = groupOutgoingByToken(activeStreams);
   const hasSingleToken = outgoingByToken.length === 1;
 
@@ -79,7 +77,7 @@ export default function SendingPage() {
           <p className="mt-1 text-muted">Streams where your connected wallet is the sender.</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <RefreshButton onRefresh={refetch} isLoading={isLoading} />
+          <RefreshButton onRefresh={refetch} isLoading={isLoading} lastUpdatedAt={lastUpdatedAt} />
           {isLoading ? (
             <div className="card px-5 py-3 text-right" aria-busy="true">
               <p className="text-xs text-muted">Total outgoing commitment</p>
@@ -145,6 +143,9 @@ export default function SendingPage() {
         />
       )}
 
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading ? "Loading streams…" : ""}
+      </div>
       {isLoading ? (
         <CardSkeletonGrid />
       ) : error ? (
@@ -170,11 +171,10 @@ export default function SendingPage() {
           }
         />
       ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleStreams.map((stream) => (
+        <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleStreams.map((stream) => (
+            <li key={stream.id}>
               <StreamCard
-                key={stream.id}
                 stream={stream}
                 role="sender"
                 actions={
@@ -197,25 +197,9 @@ export default function SendingPage() {
                   />
                 }
               />
-            ))}
-          </div>
-          {hasMore && (
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <p className="text-sm text-muted">
-                Showing {streams.length} of {total ?? streams.length}
-              </p>
-              <button type="button" onClick={loadMore} disabled={isLoadingMore} className="btn-secondary">
-                {isLoadingMore ? (
-                  <>
-                    <Spinner size="sm" /> Loading…
-                  </>
-                ) : (
-                  "Load more"
-                )}
-              </button>
-            </div>
-          )}
-        </>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

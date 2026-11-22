@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchStreamsByRecipientPage, fetchStreamsBySenderPage, isApiConfigured, type StreamsPage } from "@/lib/api";
+import { useAsync } from "@/hooks/useAsync";
+import { fetchStreamsByRecipient, fetchStreamsBySender, isApiConfigured } from "@/lib/api";
 import type { Stream } from "@/types";
 
 export type StreamRole = "sender" | "recipient";
@@ -12,11 +12,8 @@ export interface UseStreamsResult {
   isLoadingMore: boolean;
   error: string | null;
   apiConfigured: boolean;
-  /** Total streams available on the server, from `X-Total-Count`; null when unknown. */
-  total: number | null;
-  /** Whether `loadMore` can fetch another page beyond what's in `streams`. */
-  hasMore: boolean;
-  loadMore: () => Promise<void>;
+  /** Time (ms) of the last successful fetch for the current address and role, or null if none yet. */
+  lastUpdatedAt: number | null;
   refetch: () => Promise<void>;
 }
 
@@ -44,32 +41,22 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState<number | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const lastFetchedAtRef = useRef<number | null>(null);
-  const streamCountRef = useRef(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 
   const load = useCallback(
     async (isStale: () => boolean = () => false) => {
       if (!address) {
-        if (!isStale()) {
-          setStreams([]);
-          setTotal(null);
-          setHasMore(false);
-          setIsLoading(false);
-        }
-        return;
+        return [];
       }
 
       setIsLoading(true);
       setError(null);
       try {
-        const page = await fetchPage(role, address, 0);
+        const results =
+          role === "sender" ? await fetchStreamsBySender(address) : await fetchStreamsByRecipient(address);
         if (isStale()) return;
-        setStreams(page.streams);
-        setTotal(page.total);
-        setHasMore(page.hasMore);
-        lastFetchedAtRef.current = Date.now();
+        setStreams(results);
+        setLastUpdatedAt(Date.now());
       } catch (err) {
         if (isStale()) return;
         // A failed page rejects the whole request, so we never keep a partial list around.
@@ -81,11 +68,13 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
         if (!isStale()) setIsLoading(false);
       }
     },
-    [address, role],
+    [address, role]
   );
 
   useEffect(() => {
     let ignore = false;
+    // A different address or role is a different list, so its freshness starts over.
+    setLastUpdatedAt(null);
     load(() => ignore);
     return () => {
       ignore = true;
@@ -125,5 +114,5 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
 
   const refetch = useCallback(() => load(), [load]);
 
-  return { streams, isLoading, isLoadingMore, error, apiConfigured: isApiConfigured(), total, hasMore, loadMore, refetch };
+  return { streams, isLoading, error, apiConfigured: isApiConfigured(), lastUpdatedAt, refetch };
 }
