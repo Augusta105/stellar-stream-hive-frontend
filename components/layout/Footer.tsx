@@ -2,6 +2,9 @@ import { NETWORK, STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { buildReportIssueUrl } from "@/lib/reportIssue";
 import { formatBuildLabel, getBuildInfo } from "@/lib/buildInfo";
 
+/** Security Model docs live with the contracts; wording matches those docs. */
+export const SECURITY_MODEL_URL = "https://github.com/Stellar-Hive/stellar-stream-hive-contract";
+
 export function Footer() {
   const streamContractId = process.env.NEXT_PUBLIC_STREAM_CONTRACT_ID;
   const build = getBuildInfo(process.env.NEXT_PUBLIC_APP_VERSION, process.env.NEXT_PUBLIC_APP_COMMIT);
@@ -31,7 +34,7 @@ export function Footer() {
                 <a
                   href={`https://stellar.expert/explorer/${STELLAR_EXPERT_NETWORK}/contract/${streamContractId}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="underline transition hover:text-white"
                 >
                   Stream contract
@@ -56,7 +59,7 @@ export function Footer() {
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-contract"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-white"
           >
             Contracts
@@ -65,7 +68,7 @@ export function Footer() {
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-api"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-white"
           >
             API
@@ -74,7 +77,7 @@ export function Footer() {
           <a
             href="https://github.com/Stellar-Hive/stellar-stream-hive-frontend"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-white"
           >
             Frontend
