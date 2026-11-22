@@ -63,7 +63,7 @@ export function NavBar() {
             ref={toggleRef}
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            className="rounded-lg border border-border p-2 text-muted hover:text-white md:hidden"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border p-2 text-muted hover:text-white md:hidden"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileOpen}
             aria-controls={MOBILE_MENU_ID}

@@ -252,9 +252,9 @@ function AddressRow({ label, address }: { label: string; address: string }) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mb-2 flex items-center justify-between text-sm last:mb-0">
-      <span className="text-muted">{label}</span>
-      <span>{value}</span>
+    <div className="mb-2 flex items-center justify-between gap-2 text-sm last:mb-0">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className="min-w-0 break-words text-right">{value}</span>
     </div>
   );
 }

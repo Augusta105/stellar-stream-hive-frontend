@@ -7,6 +7,10 @@
     color-scheme: dark;
   }
 
+  html, body {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-white antialiased;
   }
@@ -62,4 +66,11 @@
 ::-webkit-scrollbar-thumb {
   background-color: #242b3a;
   border-radius: 8px;
+}
+
+@layer utilities {
+  .break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 }

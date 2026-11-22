@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Keep the Stellar SDK out of server-side route bundles; it is large and
+  // only needed at runtime in wallet-action paths (transaction building,
+  // contract simulation). Next.js will require() it from node_modules at
+  // runtime instead of inlining it.
+  serverExternalPackages: ['@stellar/stellar-sdk'],
   async headers() {
     return [
       {
