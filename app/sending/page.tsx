@@ -8,8 +8,10 @@ import { StreamCard } from "@/components/stream/StreamCard";
 import { StreamFilterBar } from "@/components/stream/StreamFilterBar";
 import { RefreshButton } from "@/components/stream/RefreshButton";
 import { CancelButton } from "@/components/stream/CancelButton";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   countByFilter,
   filterStreams,
@@ -26,7 +28,7 @@ import { groupOutgoingByToken } from "@/lib/outgoingTotals";
 
 export default function SendingPage() {
   const wallet = useWallet();
-  const { streams, isLoading, error, apiConfigured, refetch } = useStreams(wallet.publicKey, "sender");
+  const { streams, isLoading, error, apiConfigured, lastUpdatedAt, refetch } = useStreams(wallet.publicKey, "sender");
   const [filter, setFilter] = useState<StreamFilter>("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<StreamSort>("default");
@@ -48,7 +50,9 @@ export default function SendingPage() {
     );
   }
 
-  const activeStreams = streams.filter((s) => s.status === "active" || s.status === "cliff" || s.status === "scheduled");
+  const activeStreams = streams.filter(
+    (s) => s.status === "active" || s.status === "cliff" || s.status === "scheduled"
+  );
   const outgoingByToken = groupOutgoingByToken(activeStreams);
   const hasSingleToken = outgoingByToken.length === 1;
 
@@ -60,7 +64,7 @@ export default function SendingPage() {
           <p className="mt-1 text-muted">Streams where your connected wallet is the sender.</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <RefreshButton onRefresh={refetch} isLoading={isLoading} />
+          <RefreshButton onRefresh={refetch} isLoading={isLoading} lastUpdatedAt={lastUpdatedAt} />
           {isLoading ? (
             <div className="card px-5 py-3 text-right" aria-busy="true">
               <p className="text-xs text-muted">Total outgoing commitment</p>

@@ -7,6 +7,7 @@ import { computeCancelSplit, computeStreamedAmount } from "@/lib/streaming";
 import { describeFreighterError } from "@/lib/freighter";
 import { formatTokenAmount, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
+import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 
 type Status = "idle" | "loadingSplit" | "confirming" | "signing" | "success" | "error";
@@ -114,7 +115,7 @@ export function CancelButton({
           withdrawnAmount: BigInt(stream.withdrawnAmount),
           cliffLedger: stream.cliffLedger,
           currentLedger: ledgerSnapshot.ledger,
-        }),
+        })
       );
       setStatus("confirming");
     } catch (err) {
@@ -148,9 +149,9 @@ export function CancelButton({
 
   if (!open) {
     return (
-      <button type="button" ref={triggerRef} onClick={openModal} className="btn-danger">
+      <Button ref={triggerRef} variant="danger" onClick={openModal}>
         Cancel stream
-      </button>
+      </Button>
     );
   }
 
@@ -187,8 +188,14 @@ export function CancelButton({
 
         {split && (status === "confirming" || status === "signing") && (
           <div className="mb-4 space-y-2 rounded-xl border border-border bg-background p-4">
-            <SplitRow label="Recipient receives" value={formatTokenAmount(split.recipientGets, tokenSymbol, tokenDecimals, 7)} />
-            <SplitRow label="Sender refunded" value={formatTokenAmount(split.senderGets, tokenSymbol, tokenDecimals, 7)} />
+            <SplitRow
+              label="Recipient receives"
+              value={formatTokenAmount(split.recipientGets, tokenSymbol, tokenDecimals, 7)}
+            />
+            <SplitRow
+              label="Sender refunded"
+              value={formatTokenAmount(split.senderGets, tokenSymbol, tokenDecimals, 7)}
+            />
           </div>
         )}
 
@@ -199,13 +206,9 @@ export function CancelButton({
               const explorerUrl = stellarExpertTxUrl(txHash, STELLAR_EXPERT_NETWORK);
               return (
                 explorerUrl && (
-                  <a
-                    href={explorerUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-accent underline"
-                  >
+                  <a href={explorerUrl} target="_blank" rel="noreferrer" className="text-sm text-accent underline">
                     View transaction on Stellar Expert
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 )
               );
@@ -215,28 +218,23 @@ export function CancelButton({
 
         <div className="flex gap-2">
           {status === "success" ? (
-            <button type="button" onClick={close} className="btn-secondary flex-1">
+            <Button variant="secondary" className="flex-1" onClick={close}>
               Close
-            </button>
+            </Button>
           ) : (
             <>
-              <button
-                type="button"
+              <Button
+                variant="danger"
+                className="flex-1"
                 onClick={handleConfirm}
                 disabled={status !== "confirming"}
-                className="btn-danger flex-1"
+                isLoading={status === "signing"}
               >
-                {status === "signing" ? (
-                  <>
-                    <Spinner size="sm" /> Confirm in wallet…
-                  </>
-                ) : (
-                  "Yes, cancel stream"
-                )}
-              </button>
-              <button type="button" onClick={close} disabled={status === "signing"} className="btn-secondary flex-1">
+                {status === "signing" ? "Confirm in wallet…" : "Yes, cancel stream"}
+              </Button>
+              <Button variant="secondary" className="flex-1" onClick={close} disabled={status === "signing"}>
                 Keep streaming
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -250,7 +248,7 @@ const FOCUSABLE_SELECTOR =
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => el.offsetParent !== null || el === document.activeElement,
+    (el) => el.offsetParent !== null || el === document.activeElement
   );
 }
 

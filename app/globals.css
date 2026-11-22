@@ -63,3 +63,72 @@
   background-color: #242b3a;
   border-radius: 8px;
 }
+
+@media print {
+  /* Hide interactive elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Hide navbar and footer */
+  nav,
+  header,
+  .navbar {
+    display: none !important;
+  }
+
+  /* Dark text on white background for readability */
+  body {
+    @apply bg-white text-black;
+  }
+
+  a {
+    @apply text-blue-600 underline;
+  }
+
+  /* Keep full addresses visible without truncation */
+  .truncate {
+    @apply truncate-none;
+  }
+
+  /* Adjust card styling for print */
+  .card {
+    @apply border border-gray-300 bg-white text-black;
+    page-break-inside: avoid;
+  }
+
+  /* Remove background colors and use border instead */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply border border-gray-400 bg-white text-black;
+  }
+
+  /* Ensure all content is visible */
+  * {
+    @apply bg-white text-black;
+  }
+
+  /* Override surface colors for print */
+  .bg-surface,
+  .bg-background {
+    @apply bg-white;
+  }
+
+  /* Make sure text is always readable */
+  .text-muted {
+    @apply text-gray-600;
+  }
+
+  /* Optimize spacing for print */
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  main,
+  .mx-auto {
+    max-width: 100%;
+    padding: 0;
+  }
+}
