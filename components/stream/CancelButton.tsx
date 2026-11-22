@@ -179,7 +179,11 @@ export function CancelButton({
           </div>
         )}
 
-        {status === "error" && <p className="mb-4 text-sm text-danger">{error}</p>}
+        {status === "error" && (
+          <p role="alert" className="mb-4 text-sm text-danger">
+            {error}
+          </p>
+        )}
 
         {split && (status === "confirming" || status === "signing") && (
           <div className="mb-4 space-y-2 rounded-xl border border-border bg-background p-4">
@@ -189,7 +193,7 @@ export function CancelButton({
         )}
 
         {status === "success" && txHash && (
-          <div className="mb-4">
+          <div role="status" className="mb-4">
             <p className="mb-2 text-sm font-medium text-primary">Stream cancelled.</p>
             {(() => {
               const explorerUrl = stellarExpertTxUrl(txHash, STELLAR_EXPERT_NETWORK);

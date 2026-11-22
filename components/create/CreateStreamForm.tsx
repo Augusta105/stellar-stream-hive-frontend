@@ -100,7 +100,7 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
 
   if (status === "success" && result) {
     return (
-      <div className="card mx-auto max-w-lg border-primary/30 bg-primary/5 text-center">
+      <div role="status" className="card mx-auto max-w-lg border-primary/30 bg-primary/5 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M20 6 9 17l-5-5" />
@@ -189,7 +189,11 @@ function CreateStreamFields({ onReset }: { onReset: () => void }) {
           )}
         </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
+        )}
 
         {!wallet.isConnected ? (
           <button type="button" onClick={wallet.connect} disabled={wallet.isConnecting} className="btn-primary w-full">

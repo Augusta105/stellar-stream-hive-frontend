@@ -19,6 +19,8 @@ import {
   type StreamSort,
 } from "@/lib/streamList";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { Spinner } from "@/components/ui/Spinner";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
 import { formatTokenAmount } from "@/lib/format";
 import { groupOutgoingByToken } from "@/lib/outgoingTotals";
 
@@ -124,6 +126,9 @@ export default function SendingPage() {
         />
       )}
 
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading ? "Loading streams…" : ""}
+      </div>
       {isLoading ? (
         <CardSkeletonGrid />
       ) : error ? (
@@ -141,34 +146,35 @@ export default function SendingPage() {
       ) : visibleStreams.length === 0 ? (
         <EmptyState title="No matching streams" description="Try a different status filter or search." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {visibleStreams.map((stream) => (
-            <StreamCard
-              key={stream.id}
-              stream={stream}
-              role="sender"
-              actions={
-                <CancelButton
-                  streamId={stream.id}
-                  senderAddress={stream.sender}
-                  connectedAddress={wallet.publicKey}
-                  cancellable={
-                    stream.cancellable &&
-                    (stream.status === "active" ||
-                      stream.status === "cliff" ||
-                      // The contract allows cancelling any stream that is not
-                      // Cancelled or Completed, including Pending/scheduled ones.
-                      // A scheduled stream that hasn't started refunds the sender in full.
-                      stream.status === "scheduled")
-                  }
-                  tokenSymbol={stream.token.symbol}
-                  tokenDecimals={stream.token.decimals}
-                  onCancelled={refetch}
-                />
-              }
-            />
+            <li key={stream.id}>
+              <StreamCard
+                stream={stream}
+                role="sender"
+                actions={
+                  <CancelButton
+                    streamId={stream.id}
+                    senderAddress={stream.sender}
+                    connectedAddress={wallet.publicKey}
+                    cancellable={
+                      stream.cancellable &&
+                      (stream.status === "active" ||
+                        stream.status === "cliff" ||
+                        // The contract allows cancelling any stream that is not
+                        // Cancelled or Completed, including Pending/scheduled ones.
+                        // A scheduled stream that hasn't started refunds the sender in full.
+                        stream.status === "scheduled")
+                    }
+                    tokenSymbol={stream.token.symbol}
+                    tokenDecimals={stream.token.decimals}
+                    onCancelled={refetch}
+                  />
+                }
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
