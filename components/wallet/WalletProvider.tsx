@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -28,6 +29,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const watcherRef = useRef<(() => void) | null>(null);
+  const networkRef = useRef<string | null>(null);
 
   const checkFreighterInstalled = useCallback(async () => {
     try {
@@ -112,6 +115,40 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setError(null);
   }, []);
 
+  const refreshWallet = useCallback(async () => {
+    try {
+      const freighter = (window as unknown as {
+        freighter?: {
+          getPublicKey?: () => Promise<string>;
+          getNetwork?: () => Promise<string>;
+        };
+      }).freighter;
+
+      if (!freighter) return;
+
+      let currentAddress: string | null = null;
+      if (typeof freighter.getPublicKey === 'function') {
+        currentAddress = await freighter.getPublicKey();
+      }
+
+      let currentNetwork: string | null = null;
+      if (typeof freighter.getNetwork === 'function') {
+        try {
+          currentNetwork = await freighter.getNetwork();
+        } catch {
+          currentNetwork = null;
+        }
+      }
+
+      if (currentAddress !== publicKey || currentNetwork !== network) {
+        setPublicKey(currentAddress);
+        setNetwork(currentNetwork);
+      }
+    } catch {
+      // Silently ignore refresh failures
+    }
+  }, [publicKey, network]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -174,6 +211,76 @@ export function WalletProvider({ children }: WalletProviderProps) {
       cancelled = true;
     };
   }, [checkFreighterInstalled]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isFreighterInstalled || !publicKey) {
+      return;
+    }
+
+    const setupWatcher = () => {
+      const freighter = (window as unknown as {
+        freighter?: {
+          watchAccount?: (callback: (address: string) => void) => () => void;
+          watchNetwork?: (callback: (network: string) => void) => () => void;
+        };
+      }).freighter;
+
+      let unsubscribeAccount: (() => void) | null = null;
+      let unsubscribeNetwork: (() => void) | null = null;
+
+      if (freighter?.watchAccount) {
+        unsubscribeAccount = freighter.watchAccount((address) => {
+          if (address !== publicKey) {
+            setPublicKey(address);
+          }
+        });
+      }
+
+      if (freighter?.watchNetwork) {
+        unsubscribeNetwork = freighter.watchNetwork((network) => {
+          if (network !== networkRef.current) {
+            setNetwork(network);
+            networkRef.current = network;
+          }
+        });
+      }
+
+      const unsubscribe = () => {
+        unsubscribeAccount?.();
+        unsubscribeNetwork?.();
+      };
+
+      if (unsubscribeAccount || unsubscribeNetwork) {
+        watcherRef.current = unsubscribe;
+        return unsubscribe;
+      }
+
+      // Fallback: poll on visibility change
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          void refreshWallet();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      watcherRef.current = () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    };
+
+    const unsubscribe = setupWatcher();
+    return unsubscribe;
+  }, [isFreighterInstalled, publicKey, refreshWallet]);
+
+  useEffect(() => {
+    return () => {
+      watcherRef.current?.();
+    };
+  }, []);
 
   const value = useMemo<UseWalletResult>(
     () => {

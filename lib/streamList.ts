@@ -133,3 +133,38 @@ export function streamsToCsv(streams: Stream[]): string {
   ]);
   return [CSV_HEADER, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
+
+/** Serializes a single stream to JSON (amounts as decimal strings). */
+export function streamToJson(stream: Stream): string {
+  return JSON.stringify(
+    {
+      id: stream.id,
+      status: stream.status,
+      sender: stream.sender,
+      recipient: stream.recipient,
+      token: stream.token.symbol,
+      totalAmount: formatBaseUnits(BigInt(stream.totalAmount), stream.token.decimals, {
+        grouped: false,
+        minDecimals: 0,
+      }),
+      withdrawnAmount: formatBaseUnits(BigInt(stream.withdrawnAmount), stream.token.decimals, {
+        grouped: false,
+        minDecimals: 0,
+      }),
+      startLedger: stream.startLedger,
+      endLedger: stream.endLedger,
+      cliffLedger: stream.cliffLedger,
+      cancellable: stream.cancellable,
+      startTime: stream.startTime.toISOString(),
+      endTime: stream.endTime.toISOString(),
+      cliffTime: stream.cliffTime?.toISOString() ?? null,
+    },
+    null,
+    2
+  );
+}
+
+/** Serializes a single stream to CSV. */
+export function streamToCsv(stream: Stream): string {
+  return streamsToCsv([stream]);
+}

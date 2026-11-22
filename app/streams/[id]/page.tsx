@@ -91,6 +91,7 @@ export default function StreamDetailPage({ params }: { params: Promise<{ id: str
             value={() => (typeof window !== "undefined" ? window.location.href : "")}
             label="Copy link"
           />
+          <ExportButtons stream={stream} />
           <StreamStatusBadge status={stream.status} />
         </div>
 
@@ -241,5 +242,38 @@ function AddressRow({ label, address }: { label: string; address: string }) {
         <CopyButton value={address} label="Copy address" />
       </div>
     </LedgerSnapshotProvider>
+  );
+}
+
+function ExportButtons({ stream }: { stream: any }) {
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={() => downloadFile(streamToCsv(stream), csvFilename(`stream-${stream.id}`), "text/csv")}
+        className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-surface-hover print:hidden"
+        title="Download as CSV"
+      >
+        CSV
+      </button>
+      <button
+        onClick={() => downloadFile(streamToJson(stream), `stream-${stream.id}.json`, "application/json")}
+        className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-surface-hover print:hidden"
+        title="Download as JSON"
+      >
+        JSON
+      </button>
+    </div>
   );
 }
