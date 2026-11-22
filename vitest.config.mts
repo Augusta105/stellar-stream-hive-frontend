@@ -7,11 +7,10 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname) },
   },
   test: {
-    environment: "node",
+    environment: "jsdom",
     globals: true,
+    include: ["app/**/*.test.tsx", "lib/**/*.test.ts", "hooks/**/*.test.ts", "components/**/*.test.tsx"],
     setupFiles: ["./vitest.setup.ts"],
-    environmentMatchGlobs: [["components/**/*.test.tsx", "jsdom"]],
-    include: ["lib/**/*.test.ts", "hooks/**/*.test.ts", "components/**/*.test.tsx"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
