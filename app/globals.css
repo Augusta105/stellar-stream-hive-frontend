@@ -3,12 +3,48 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+  :root {
+    --color-background: #0b0e14;
+    --color-surface: #12161f;
+    --color-surface-hover: #171c28;
+    --color-border: #242b3a;
+    --color-primary: #6ee7b7;
+    --color-primary-dark: #34d399;
+    --color-primary-light: #a7f3d0;
+    --color-accent: #818cf8;
+    --color-accent-dark: #6366f1;
+    --color-muted: #8b93a7;
+    --color-danger: #f87171;
+    --color-warning: #fbbf24;
     color-scheme: dark;
   }
 
+  html:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+
+  html[data-theme="light"] {
+    --color-background: #ffffff;
+    --color-surface: #f3f4f6;
+    --color-surface-hover: #e5e7eb;
+    --color-border: #d1d5db;
+    --color-primary: #10b981;
+    --color-primary-dark: #059669;
+    --color-primary-light: #d1fae5;
+    --color-accent: #6366f1;
+    --color-accent-dark: #4f46e5;
+    --color-muted: #6b7280;
+    --color-danger: #ef4444;
+    --color-warning: #f59e0b;
+    color-scheme: light;
+  }
+
   body {
-    @apply bg-background text-white antialiased;
+    @apply bg-background text-white antialiased transition-colors;
+  }
+
+  html[data-theme="light"] body {
+    @apply text-gray-900;
   }
 
   ::selection {
