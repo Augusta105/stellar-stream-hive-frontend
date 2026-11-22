@@ -6,6 +6,7 @@ import { describeFreighterError } from "@/lib/freighter";
 import { formatBaseUnits, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { checkAmount } from "@/lib/validation";
+import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 
 type Status = "idle" | "checking" | "signing" | "submitting" | "success" | "error";
@@ -108,9 +109,9 @@ export function WithdrawButton({
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="btn-primary">
+      <Button onClick={() => setOpen(true)}>
         Withdraw
-      </button>
+      </Button>
     );
   }
 
@@ -134,9 +135,9 @@ export function WithdrawButton({
             )
           );
         })()}
-        <button
-          type="button"
-          className="btn-secondary mt-4 w-full"
+        <Button
+          variant="secondary"
+          className="mt-4 w-full"
           onClick={() => {
             setOpen(false);
             setStatus("idle");
@@ -146,7 +147,7 @@ export function WithdrawButton({
           }}
         >
           Close
-        </button>
+        </Button>
       </div>
     );
   }
@@ -213,7 +214,7 @@ export function WithdrawButton({
         </button>
         <button type="button" onClick={() => setOpen(false)} disabled={isBusy} className="btn-secondary">
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

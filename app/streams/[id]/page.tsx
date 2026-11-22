@@ -2,12 +2,10 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import { useStream } from "@/hooks/useStream";
 import { useWallet } from "@/hooks/useWallet";
-import { LiveBalance } from "@/components/stream/LiveBalance";
-import { StreamProgress } from "@/components/stream/StreamProgress";
-import { StreamTimeline } from "@/components/stream/StreamTimeline";
+import { StreamDetails } from "@/components/stream/StreamDetails";
+import { StreamActions } from "@/components/stream/StreamActions";
 import { StreamStatusBadge } from "@/components/stream/StreamStatusBadge";
 import { StartsInCountdown } from "@/components/stream/StartsInCountdown";
 import { WithdrawButton } from "@/components/stream/WithdrawButton";
@@ -242,15 +240,6 @@ function AddressRow({ label, address }: { label: string; address: string }) {
         })()}
         <CopyButton value={address} label="Copy address" />
       </div>
-    </div>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="mb-2 flex items-center justify-between text-sm last:mb-0">
-      <span className="text-muted">{label}</span>
-      <span>{value}</span>
-    </div>
+    </LedgerSnapshotProvider>
   );
 }

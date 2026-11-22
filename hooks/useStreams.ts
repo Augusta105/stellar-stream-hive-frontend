@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useAsync } from "@/hooks/useAsync";
 import { fetchStreamsByRecipient, fetchStreamsBySender, isApiConfigured } from "@/lib/api";
 import type { Stream } from "@/types";
 
@@ -33,11 +33,7 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
   const load = useCallback(
     async (isStale: () => boolean = () => false) => {
       if (!address) {
-        if (!isStale()) {
-          setStreams([]);
-          setIsLoading(false);
-        }
-        return;
+        return [];
       }
 
       setIsLoading(true);
