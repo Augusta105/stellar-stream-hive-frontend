@@ -24,6 +24,7 @@ import {
 } from "@stellar/stellar-sdk";
 import { fetchLatestLedgerSnapshot, getSorobanServer, nativeTokenContractId, NETWORK_PASSPHRASE } from "./stellar";
 import { signWithFreighter } from "./freighter";
+import { isUnfundedAccountError, UNFUNDED_ACCOUNT_MESSAGE } from "./contractErrors";
 import { makeTokenResolver, mapRawStream, type RawStreamRecord } from "./streamMapping";
 import { withTokenMetadata } from "./tokens";
 import type { Stream } from "@/types";
@@ -87,7 +88,11 @@ async function invokeContract(
 ): Promise<{ hash: string; returnValue: unknown }> {
   const server = getSorobanServer();
   const contract = new Contract(contractId);
-  const account = await server.getAccount(sourcePublicKey);
+  const account = await server.getAccount(sourcePublicKey).catch((err: unknown) => {
+    const raw = err instanceof Error ? err.message : String(err);
+    if (isUnfundedAccountError(raw)) throw new Error(UNFUNDED_ACCOUNT_MESSAGE);
+    throw err;
+  });
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
@@ -116,11 +121,7 @@ async function invokeContract(
   return { hash, returnValue: result };
 }
 
-async function pollTransaction(
-  server: SorobanRpc.Server,
-  hash: string,
-  timeoutMs: number = 30_000
-): Promise<unknown> {
+async function pollTransaction(server: SorobanRpc.Server, hash: string, timeoutMs: number = 30_000): Promise<unknown> {
   const start = Date.now();
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -231,10 +232,7 @@ export async function withdrawOnChain(params: {
 }
 
 /** Calls cancel_stream on the Stream contract, settling the split between sender and recipient. */
-export async function cancelStreamOnChain(params: {
-  streamId: string;
-  sender: string;
-}): Promise<{ hash: string }> {
+export async function cancelStreamOnChain(params: { streamId: string; sender: string }): Promise<{ hash: string }> {
   const contractId = getStreamContractId();
   // Contract signature: cancel_stream(sender, stream_id)
   const args = [new Address(params.sender).toScVal(), nativeToScVal(BigInt(params.streamId), { type: "u64" })];

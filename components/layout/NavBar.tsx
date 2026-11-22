@@ -19,6 +19,7 @@ export function NavBar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -63,6 +64,17 @@ export function NavBar() {
               {link.label}
             </Link>
           ))}
+          {docsUrl && (
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:text-white"
+            >
+              Docs
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          )}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -105,6 +117,17 @@ export function NavBar() {
               {link.label}
             </Link>
           ))}
+          {docsUrl && (
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:text-white"
+            >
+              Docs
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          )}
         </nav>
       )}
     </header>
@@ -113,7 +136,15 @@ export function NavBar() {
 
 function HiveLogo() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" className="text-primary" fill="none" stroke="currentColor" strokeWidth="1.6">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      className="text-primary"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+    >
       <path d="M12 2 20 6.5v9L12 20 4 15.5v-9L12 2Z" />
       <path d="M12 8 16 10v4l-4 2-4-2v-4l4-2Z" />
     </svg>

@@ -7,11 +7,11 @@ application.
 
 ## Related repositories
 
-| Repo | Purpose |
-| --- | --- |
-| [`stellar-stream-hive-contract`](https://github.com/Stellar-Hive/stellar-stream-hive-contract) | Soroban smart contracts (Stream, Vault, Registry) |
-| [`stellar-stream-hive-api`](https://github.com/Stellar-Hive/stellar-stream-hive-api) | Indexer/registry API used for stats and stream listings |
-| `stellar-stream-hive-frontend` (this repo) | Next.js web app |
+| Repo                                                                                           | Purpose                                                 |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`stellar-stream-hive-contract`](https://github.com/Stellar-Hive/stellar-stream-hive-contract) | Soroban smart contracts (Stream, Vault, Registry)       |
+| [`stellar-stream-hive-api`](https://github.com/Stellar-Hive/stellar-stream-hive-api)           | Indexer/registry API used for stats and stream listings |
+| `stellar-stream-hive-frontend` (this repo)                                                     | Next.js web app                                         |
 
 ## Screenshots
 
@@ -19,8 +19,8 @@ Captured against testnet with throwaway test accounts — no real addresses, bal
 transaction hashes. See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the
 capture steps and the full expected set; the images below are pending capture.
 
-| The live, ticking balance | Create a stream | Streams you're sending |
-| --- | --- | --- |
+| The live, ticking balance                                    | Create a stream                                         | Streams you're sending                             |
+| ------------------------------------------------------------ | ------------------------------------------------------- | -------------------------------------------------- |
 | ![Receiving balance](docs/screenshots/receiving-balance.png) | ![Create stream form](docs/screenshots/streams-new.png) | ![Sending list](docs/screenshots/sending-list.png) |
 
 ## The signature feature: LiveBalance
@@ -53,15 +53,14 @@ for a transaction.
 | `lint` | Run ESLint |
 | `typecheck` | Run the TypeScript compiler with `--noEmit` |
 | `test` | Run Vitest once |
-| `test:watch` | Run Vitest in watch mode |
+| `test:coverage` | Run Vitest once with coverage reporting |
 
 ## Tech stack
 
-- [Next.js 14](https://nextjs.org/) (App Router) + TypeScript
+- [Next.js 15](https://nextjs.org/) (App Router) + [React 19](https://react.dev/) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com/) (dark mode by default)
-- [`@stellar/stellar-sdk`](https://github.com/stellar/js-stellar-sdk) for building/simulating/submitting Soroban transactions
+- [`@stellar/stellar-sdk`](https://github.com/stellar/js-stellar-sdk) 13.1.0 for building/simulating/submitting Soroban transactions
 - [`@stellar/freighter-api`](https://github.com/stellar/freighter) for wallet connection and signing
-- [Recharts](https://recharts.org/) for data visualization
 - [date-fns](https://date-fns.org/) for date formatting
 
 ## Getting started
@@ -84,7 +83,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint` | Runs ESLint with the `next/core-web-vitals` rules |
 | `npm run typecheck` | Runs `tsc --noEmit` in strict mode |
 | `npm test` | Runs the Vitest unit tests once |
-| `npm run test:watch` | Runs the Vitest unit tests and re-runs them on every file change |
+| `npm run test:coverage` | Runs the Vitest unit tests once and reports coverage |
 
 ## Environment variables
 
@@ -108,6 +107,9 @@ See [`.env.example`](./.env.example) for the full, documented list. In short:
 
 ## Project structure
 
+For how these layers depend on each other and where each data source comes from, see
+[`docs/architecture.md`](./docs/architecture.md).
+
 ```
 app/
   page.tsx                    Landing page (hero, no-wallet live demo, platform stats)
@@ -126,8 +128,11 @@ hooks/
   useWallet.ts                Freighter connection state
   useLiveBalance.ts           The per-second ticking balance hook
   useStream.ts / useStreams.ts  Data loading for one stream / lists of streams
+  useLedgerSnapshot.ts        Latest-ledger snapshot used by the live balance
 lib/
   contracts.ts                Soroban contract call helpers (create/withdraw/cancel)
+  contractErrors.ts           Maps contract error codes to friendly messages
+  constants.ts                Shared constants (e.g. the balance tick interval)
   freighter.ts                Freighter API wrapper with normalized error handling
   stellar.ts                  Network config, RPC client, address validation
   streaming.ts                Client-side streamed-amount math (mirrors the contract)
@@ -138,7 +143,7 @@ lib/
   tokenMetadata.ts            Token metadata (symbol, decimals) loading and caching
   streamMapping.ts            Mapping indexer API and contract responses into `Stream`
   streamList.ts               Status filters and CSV export for stream lists
-types/index.ts                 Shared domain types
+types/index.ts                Shared domain types
 ```
 
 ## Verifying the build
@@ -188,7 +193,7 @@ MIT
 ```bash
 npm run lint        # ESLint (next/core-web-vitals)
 npm run typecheck   # tsc --noEmit, strict mode
-npm test            # Vitest unit tests (watch mode: npm run test:watch)
+npm test            # Vitest unit tests once (with coverage: npm run test:coverage)
 npm run build       # production build
 ```
 
@@ -197,12 +202,12 @@ All four run in CI on every push and pull request (`.github/workflows/ci.yml`).
 The unit tests target the logic where a mistake would cost someone money or show
 them a wrong balance, and run without a browser, wallet or network:
 
-| Module | What is covered |
-| --- | --- |
-| `lib/streaming.ts` | The accrual formula against the contract's own test vectors: flooring, multiply-before-divide, cliff, monotonicity, BigInt precision beyond `Number.MAX_SAFE_INTEGER`, ledger/time estimation |
-| `lib/format.ts` | Decimal parsing and formatting round-trips, truncation instead of rounding, address and explorer URL helpers |
-| `lib/streamMapping.ts` | Mapping the indexer API's and the contract's responses into the app's `Stream` type |
-| `lib/streamList.ts` | Status filters and CSV export (including spreadsheet-formula neutralisation) |
+| Module                 | What is covered                                                                                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/streaming.ts`     | The accrual formula against the contract's own test vectors: flooring, multiply-before-divide, cliff, monotonicity, BigInt precision beyond `Number.MAX_SAFE_INTEGER`, ledger/time estimation |
+| `lib/format.ts`        | Decimal parsing and formatting round-trips, truncation instead of rounding, address and explorer URL helpers                                                                                  |
+| `lib/streamMapping.ts` | Mapping the indexer API's and the contract's responses into the app's `Stream` type                                                                                                           |
+| `lib/streamList.ts`    | Status filters and CSV export (including spreadsheet-formula neutralisation)                                                                                                                  |
 
 ## Backend compatibility
 
@@ -246,9 +251,9 @@ shown, with amounts as human-readable decimals.
 
 ## Troubleshooting
 
-| Problem | Cause | Fix |
-| --- | --- | --- |
-| "Freighter not detected" | Freighter extension not installed or page loaded before it initialised | Install [Freighter](https://www.freighter.app/), reload the page, and ensure it is enabled for this site |
-| Wrong network badge (e.g. Mainnet instead of Testnet) | `NEXT_PUBLIC_STELLAR_NETWORK` does not match the network selected in Freighter | Set the variable in `.env.local` to `testnet` or `mainnet` and restart the dev server |
-| CORS errors calling the indexer API | `NEXT_PUBLIC_API_BASE_URL` points to a server that does not allow the app's origin | Verify the URL in `.env.local` and ensure the API's CORS config includes your origin |
-| "Contract not configured" | `NEXT_PUBLIC_STREAM_CONTRACT_ID` is missing or invalid | Add the deployed contract ID to `.env.local` (see `.env.example`) |
+| Problem                                               | Cause                                                                              | Fix                                                                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| "Freighter not detected"                              | Freighter extension not installed or page loaded before it initialised             | Install [Freighter](https://www.freighter.app/), reload the page, and ensure it is enabled for this site |
+| Wrong network badge (e.g. Mainnet instead of Testnet) | `NEXT_PUBLIC_STELLAR_NETWORK` does not match the network selected in Freighter     | Set the variable in `.env.local` to `testnet` or `mainnet` and restart the dev server                    |
+| CORS errors calling the indexer API                   | `NEXT_PUBLIC_API_BASE_URL` points to a server that does not allow the app's origin | Verify the URL in `.env.local` and ensure the API's CORS config includes your origin                     |
+| "Contract not configured"                             | `NEXT_PUBLIC_STREAM_CONTRACT_ID` is missing or invalid                             | Add the deployed contract ID to `.env.local` (see `.env.example`)                                        |
