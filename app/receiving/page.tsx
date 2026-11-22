@@ -192,7 +192,7 @@ export default function ReceivingPage() {
             wallet.isConnected && wallet.publicKey ? (
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <span className="font-mono text-sm text-muted">{shortenAddress(wallet.publicKey)}</span>
-                <CopyButton value={wallet.publicKey} label="Copy address" />
+                <CopyButton value={wallet.publicKey!} label="Copy address" />
               </div>
             ) : undefined
           }

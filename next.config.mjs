@@ -50,9 +50,6 @@ const nextConfig = {
       },
     ];
   },
-  // Issue #110: a Content-Security-Policy is deliberately not set here — it
-  // needs a separate review because of Freighter (extension-injected script)
-  // and the RPC calls this app makes to Soroban/Horizon endpoints.
 };
 
 export default nextConfig;

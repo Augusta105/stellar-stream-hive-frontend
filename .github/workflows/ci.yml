@@ -7,16 +7,29 @@ on:
     branches: [main]
 
 jobs:
+  # Issue #259: run lint, typecheck and tests on the pinned Node version and
+  # the current LTS to catch regressions introduced by engine differences.
   check:
-    name: Lint, typecheck, test, build
+    name: Lint, typecheck & test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20", "22"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
+      # Issue #258: verify registry signatures for installed packages.
+      # `npm audit signatures` exits non-zero if any installed package lacks
+      # a valid registry signature. Any package that ships without a signature
+      # will cause this step to fail; remove it from dependencies or pin a
+      # signed version if that happens.
+      - name: Audit package signatures
+        run: npm audit signatures
       - name: Dependency audit (production)
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: true
@@ -33,9 +46,27 @@ jobs:
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          # Distinguish artifacts per Node version so both matrix legs upload.
+          name: coverage-report-node${{ matrix.node-version }}
           path: coverage/
           retention-days: 14
+
+  # Issue #259: build once on the pinned Node version (.nvmrc = 20) to keep
+  # CI time short. The matrix above already confirms the code is valid on both
+  # versions; a second build leg would only add time without new signal.
+  build:
+    name: Production build (Node ${{ env.PINNED_NODE }})
+    runs-on: ubuntu-latest
+    env:
+      PINNED_NODE: "20"
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.PINNED_NODE }}
+          cache: npm
+      - run: npm ci
       - name: Cache Next.js build cache
         uses: actions/cache@v4
         with:
