@@ -43,7 +43,8 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
       setIsLoading(true);
       setError(null);
       try {
-        const results = role === "sender" ? await fetchStreamsBySender(address) : await fetchStreamsByRecipient(address);
+        const results =
+          role === "sender" ? await fetchStreamsBySender(address) : await fetchStreamsByRecipient(address);
         if (isStale()) return;
         setStreams(results);
         setLastUpdatedAt(Date.now());
@@ -57,7 +58,7 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
         if (!isStale()) setIsLoading(false);
       }
     },
-    [address, role],
+    [address, role]
   );
 
   useEffect(() => {

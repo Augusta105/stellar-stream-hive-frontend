@@ -48,7 +48,9 @@ export default function SendingPage() {
     );
   }
 
-  const activeStreams = streams.filter((s) => s.status === "active" || s.status === "cliff" || s.status === "scheduled");
+  const activeStreams = streams.filter(
+    (s) => s.status === "active" || s.status === "cliff" || s.status === "scheduled"
+  );
   const outgoingByToken = groupOutgoingByToken(activeStreams);
   const hasSingleToken = outgoingByToken.length === 1;
 

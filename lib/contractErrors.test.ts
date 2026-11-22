@@ -8,14 +8,12 @@ import {
 
 describe("describeContractError", () => {
   it("maps #13 Paused to a friendly message", () => {
-    expect(describeContractError("HostError: Error(Contract, #13)")).toBe(
-      "New streams are temporarily paused.",
-    );
+    expect(describeContractError("HostError: Error(Contract, #13)")).toBe("New streams are temporarily paused.");
   });
 
   it("maps #9 ExceedsWithdrawable to a friendly message", () => {
     expect(describeContractError("simulation failed: Error(Contract, #9)")).toBe(
-      "Amount exceeds what is withdrawable.",
+      "Amount exceeds what is withdrawable."
     );
   });
 
