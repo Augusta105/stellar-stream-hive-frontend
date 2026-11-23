@@ -36,6 +36,15 @@ const apiView: ApiStreamView = {
 };
 
 describe("mapApiStream", () => {
+  it("preserves the indexed frozen remainder as a base-unit string for cancelled streams", () => {
+    const cancelled = mapApiStream({
+      ...apiView,
+      status: "cancelled",
+      withdrawable_amount: "9007199254740993",
+    }, reference);
+    expect(cancelled.frozenWithdrawableAmount).toBe("9007199254740993");
+  });
+
   it("maps snake_case API fields to the app Stream", () => {
     const s = mapApiStream(apiView, reference);
     expect(s).toMatchObject({

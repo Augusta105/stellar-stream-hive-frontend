@@ -214,7 +214,7 @@ export function WithdrawButton({
         </button>
         <button type="button" onClick={() => setOpen(false)} disabled={isBusy} className="btn-secondary">
           Cancel
-        </Button>
+        </button>
       </div>
     </div>
   );

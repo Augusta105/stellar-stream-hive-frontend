@@ -39,6 +39,14 @@ vi.mock("react", () => {
       };
       return [runtime.slots[i].value as T, setState] as const;
     },
+    useCallback: <T>(callback: T, deps: unknown[]) => {
+      const i = runtime.index++;
+      const previous = runtime.slots[i];
+      if (!previous || depsChanged(deps, previous.deps)) {
+        runtime.slots[i] = { value: callback, deps };
+      }
+      return runtime.slots[i].value as T;
+    },
     useRef: <T>(initial: T) => {
       const i = runtime.index++;
       if (!(i in runtime.slots)) runtime.slots[i] = { value: { current: initial } };
@@ -191,6 +199,7 @@ describe("useLiveBalance (simulated mode)", () => {
     const { result, unmount } = renderHook({
       ...PARAMS,
       enabled: false,
+      simulatedReference: undefined,
       withdrawnAmount: 400n,
     });
 
