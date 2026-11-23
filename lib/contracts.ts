@@ -10,24 +10,26 @@
  *
  * See DEPLOYMENTS.md in https://github.com/Stellar-Hive/stellar-stream-hive-contract
  * for the addresses once they exist.
+ *
+ * Performance (#251): the Stellar SDK is large and is loaded lazily via
+ * dynamic import() so it does not land in the initial page bundles. It is
+ * fetched the first time any wallet action or contract read is triggered.
  */
-import {
-  Contract,
-  TransactionBuilder,
-  Address,
-  Account,
-  Keypair,
-  nativeToScVal,
-  scValToNative,
-  BASE_FEE,
-  rpc as SorobanRpc,
-} from "@stellar/stellar-sdk";
+import type { rpc as SorobanRpcType } from "@stellar/stellar-sdk";
 import { fetchLatestLedgerSnapshot, getSorobanServer, nativeTokenContractId, NETWORK_PASSPHRASE } from "./stellar";
 import { signWithFreighter } from "./freighter";
 import { isUnfundedAccountError, UNFUNDED_ACCOUNT_MESSAGE } from "./contractErrors";
 import { makeTokenResolver, mapRawStream, type RawStreamRecord } from "./streamMapping";
 import { withTokenMetadata } from "./tokens";
 import type { Stream } from "@/types";
+
+// Lazily imported so the Stellar SDK is not bundled on the initial page load.
+// It only loads the first time a wallet action or contract read is triggered.
+let _sdk: typeof import("@stellar/stellar-sdk") | null = null;
+async function getSdk(): Promise<typeof import("@stellar/stellar-sdk")> {
+  if (!_sdk) _sdk = await import("@stellar/stellar-sdk");
+  return _sdk;
+}
 
 export class ContractNotConfiguredError extends Error {
   constructor(public readonly contractName: string) {
@@ -83,9 +85,11 @@ export function isRegistryContractConfigured(): boolean {
 async function invokeContract(
   contractId: string,
   method: string,
-  args: ReturnType<typeof nativeToScVal>[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any[],
   sourcePublicKey: string
 ): Promise<{ hash: string; returnValue: unknown }> {
+  const { Contract, TransactionBuilder, BASE_FEE } = await getSdk();
   const server = getSorobanServer();
   const contract = new Contract(contractId);
   const account = await server.getAccount(sourcePublicKey).catch((err: unknown) => {
@@ -98,7 +102,8 @@ async function invokeContract(
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
   })
-    .addOperation(contract.call(method, ...args))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .addOperation(contract.call(method, ...(args as any[])))
     .setTimeout(60)
     .build();
 
@@ -145,16 +150,18 @@ async function pollTransaction(server: SorobanRpc.Server, hash: string, timeoutM
  * be funded, but it does require a syntactically valid, checksummed address —
  * so we mint a fresh random keypair rather than fabricating a string.
  */
-function dummySimulationAccount(): Account {
+async function dummySimulationAccount() {
+  const { Account, Keypair } = await getSdk();
   return new Account(Keypair.random().publicKey(), "0");
 }
 
 /** Reads a stream's on-chain state without requiring a signed transaction (simulation only). */
 export async function fetchStreamOnChain(streamId: string): Promise<Stream | null> {
+  const { Contract, TransactionBuilder, BASE_FEE, nativeToScVal, scValToNative, rpc: SorobanRpc } = await getSdk();
   const contractId = getStreamContractId();
   const server = getSorobanServer();
   const contract = new Contract(contractId);
-  const account = dummySimulationAccount();
+  const account = await dummySimulationAccount();
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
@@ -196,6 +203,7 @@ export async function createStreamOnChain(params: {
   cliffLedger?: number;
   cancellable: boolean;
 }): Promise<{ streamId: string; hash: string }> {
+  const { Address, nativeToScVal } = await getSdk();
   const contractId = getStreamContractId();
 
   const args = [
@@ -220,6 +228,7 @@ export async function withdrawOnChain(params: {
   recipient: string;
   amount: bigint;
 }): Promise<{ hash: string }> {
+  const { Address, nativeToScVal } = await getSdk();
   const contractId = getStreamContractId();
   // Contract signature: withdraw(recipient, stream_id, amount)
   const args = [
@@ -246,10 +255,11 @@ export async function cancelStreamOnChain(params: { streamId: string; sender: st
  * before submitting a withdraw transaction.
  */
 export async function fetchWithdrawableOnChain(streamId: string): Promise<bigint> {
+  const { Contract, TransactionBuilder, BASE_FEE, nativeToScVal, scValToNative, rpc: SorobanRpc } = await getSdk();
   const contractId = getStreamContractId();
   const server = getSorobanServer();
   const contract = new Contract(contractId);
-  const account = dummySimulationAccount();
+  const account = await dummySimulationAccount();
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,

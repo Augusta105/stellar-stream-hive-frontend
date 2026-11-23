@@ -12,6 +12,9 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { Spinner } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { csvFilename, streamToCsv, streamToJson } from "@/lib/streamList";
+import type { Stream } from "@/types";
+
 export default function StreamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { stream, isLoading, error, notConfigured, refetch } = useStream(id);
@@ -64,9 +67,9 @@ export default function StreamDetailPage({ params }: { params: Promise<{ id: str
             value={() => (typeof window !== "undefined" ? window.location.href : "")}
             label="Copy link"
           />
+          <ExportButtons stream={stream} />
           <StreamStatusBadge status={stream.status} />
         </div>
-
       </div>
 
       {stream.status === "scheduled" && (
@@ -82,6 +85,39 @@ export default function StreamDetailPage({ params }: { params: Promise<{ id: str
       {!wallet.isConnected && (
         <p className="mt-4 text-sm text-muted">Connect your wallet to withdraw or manage this stream.</p>
       )}
+    </div>
+  );
+}
+
+function ExportButtons({ stream }: { stream: Stream }) {
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={() => downloadFile(streamToCsv(stream), csvFilename(`stream-${stream.id}`), "text/csv")}
+        className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-surface-hover print:hidden"
+        title="Download as CSV"
+      >
+        CSV
+      </button>
+      <button
+        onClick={() => downloadFile(streamToJson(stream), `stream-${stream.id}.json`, "application/json")}
+        className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-surface-hover print:hidden"
+        title="Download as JSON"
+      >
+        JSON
+      </button>
     </div>
   );
 }
