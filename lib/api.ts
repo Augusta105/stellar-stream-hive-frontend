@@ -109,7 +109,7 @@ const MOCK_STATS: ApiStats = {
   total_value_locked: "625000000",
 };
 
-function useMockData(): boolean {
+function isMockDataEnabled(): boolean {
   // Only allow mock mode in development builds, never in production
   if (process.env.NODE_ENV === "production") {
     return false;
@@ -123,7 +123,7 @@ function apiBaseUrl(): string | null {
 }
 
 export function isApiConfigured(): boolean {
-  return useMockData() || apiBaseUrl() !== null;
+  return isMockDataEnabled() || apiBaseUrl() !== null;
 }
 
 /** Transient failures worth a retry: a hung/reset connection, or an upstream/gateway hiccup. */
@@ -143,7 +143,7 @@ function delay(ms: number): Promise<void> {
  * is not transient and fails on the first attempt.
  */
 async function apiFetchResponse(path: string, init?: RequestInit): Promise<Response | null> {
-  if (useMockData()) {
+  if (isMockDataEnabled()) {
     return mockFetchResponse(path);
   }
 

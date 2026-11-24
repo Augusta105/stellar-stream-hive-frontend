@@ -47,7 +47,9 @@ export function useStreams(address: string | null, role: StreamRole): UseStreams
   const load = useCallback(
     async (isStale: () => boolean = () => false) => {
       if (!address) {
-        return [];
+        setStreams([]);
+        setIsLoading(false);
+        return;
       }
 
       setIsLoading(true);

@@ -67,7 +67,7 @@ export function useLiveBalance(params: UseLiveBalanceParams): LiveBalanceState {
       streamed: 0n,
       progress: 0,
       isLoading: isLoading || !error,
-      error,
+      error: error?.message ?? null,
       lastSyncedAt,
     };
   }
@@ -92,7 +92,7 @@ export function useLiveBalance(params: UseLiveBalanceParams): LiveBalanceState {
     streamed,
     progress,
     isLoading,
-    error,
+    error: error?.message ?? null,
     lastSyncedAt,
   };
 }

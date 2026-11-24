@@ -154,6 +154,7 @@ export function mapApiStream(
     token: resolveToken(view.token),
     totalAmount: view.total_amount,
     withdrawnAmount: view.withdrawn,
+    ...(view.status === "cancelled" && { frozenWithdrawableAmount: view.withdrawable_amount }),
     startLedger: view.start_ledger,
     endLedger: view.end_ledger,
     cliffLedger: hasCliff ? view.cliff_ledger : undefined,
