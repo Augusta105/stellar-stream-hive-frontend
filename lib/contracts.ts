@@ -189,7 +189,7 @@ export async function fetchStreamOnChain(streamId: string): Promise<Stream | nul
     makeTokenResolver(nativeTokenContractId())
   );
   const [withToken] = await withTokenMetadata([stream]);
-  return withToken;
+  return withToken ?? stream;
 }
 
 /** Calls create_stream on the Stream contract. Returns the new stream's id and tx hash. */

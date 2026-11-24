@@ -34,11 +34,12 @@ describe("fetchStreamsBySender pagination", () => {
     const streams = await fetchStreamsBySender("GSENDER");
 
     const firstStream = streams[0];
+    if (!firstStream) throw new Error("Expected at least one stream");
     expect(firstStream.id).toBe("1");
-    expect(firstStream.sender).toBe(fixtureStreams[0].sender);
-    expect(firstStream.recipient).toBe(fixtureStreams[0].recipient);
-    expect(firstStream.totalAmount).toBe(fixtureStreams[0].total_amount);
-    expect(firstStream.withdrawnAmount).toBe(fixtureStreams[0].withdrawn);
+    expect(firstStream.sender).toBe(fixtureStreams[0]?.sender);
+    expect(firstStream.recipient).toBe(fixtureStreams[0]?.recipient);
+    expect(firstStream.totalAmount).toBe(fixtureStreams[0]?.total_amount);
+    expect(firstStream.withdrawnAmount).toBe(fixtureStreams[0]?.withdrawn);
     expect(firstStream.status).toMatch(/active|cliff|scheduled|completed|cancelled/);
   });
 });

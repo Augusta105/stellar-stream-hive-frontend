@@ -77,11 +77,11 @@ export function CancelButton({
         if (e.shiftKey) {
           if (active === first || !currentPanel.contains(active)) {
             e.preventDefault();
-            last.focus();
+            last?.focus();
           }
         } else if (active === last || !currentPanel.contains(active)) {
           e.preventDefault();
-          first.focus();
+          first?.focus();
         }
       }
     }
