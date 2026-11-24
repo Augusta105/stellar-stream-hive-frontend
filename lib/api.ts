@@ -22,6 +22,7 @@
  * builds, never in production) that serves realistic fixture data instead of
  * making real API calls. The UI is clearly labeled as showing mock data.
  */
+import { API_TIMEOUT_MS } from "./constants";
 import { nativeTokenContractId } from "./stellar";
 import { withTokenMetadata } from "./tokens";
 import {
@@ -131,15 +132,24 @@ async function apiFetchResponse(path: string, init?: RequestInit): Promise<Respo
   const base = apiBaseUrl();
   if (!base) return null;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
   try {
     const res = await fetch(`${base}${path}`, {
       ...init,
       headers: { Accept: "application/json", ...(init?.headers || {}) },
       cache: "no-store",
+      signal: controller.signal,
     });
     return res.ok ? res : null;
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.error(`API is not responding: ${path} timed out after ${API_TIMEOUT_MS}ms`);
+    }
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
