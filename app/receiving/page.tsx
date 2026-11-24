@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { useStreams } from "@/hooks/useStreams";
 import { StreamCard } from "@/components/stream/StreamCard";
@@ -17,8 +18,10 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import {
   countByFilter,
   filterStreams,
+  parseStreamListParams,
   searchStreams,
   sortStreams,
+  streamListParamsToSearchParams,
   type StreamFilter,
   type StreamSort,
 } from "@/lib/streamList";
@@ -49,6 +52,16 @@ export default function ReceivingPage() {
   );
   const [withdrawAllStatus, setWithdrawAllStatus] = useState<"idle" | "running" | "done">("idle");
   const [withdrawAllResults, setWithdrawAllResults] = useState<WithdrawAllResult[]>([]);
+
+  useEffect(() => {
+    const search = streamListParamsToSearchParams({ filter, query, sort }).toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+  }, [filter, query, sort, pathname, router]);
+
+  function clearFilters() {
+    setFilter("all");
+    setQuery("");
+  }
 
   if (!wallet.isConnected) {
     return (
@@ -200,7 +213,15 @@ export default function ReceivingPage() {
           }
         />
       ) : visibleStreams.length === 0 ? (
-        <EmptyState title="No matching streams" description="Try a different status filter or search." />
+        <EmptyState
+          title="No streams match your filters"
+          description="Try a different status filter or search term."
+          action={
+            <button type="button" onClick={clearFilters} className="btn-secondary">
+              Clear filters
+            </button>
+          }
+        />
       ) : (
         <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {visibleStreams.map((stream) => (
