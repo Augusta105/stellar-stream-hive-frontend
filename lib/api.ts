@@ -22,6 +22,7 @@
  * builds, never in production) that serves realistic fixture data instead of
  * making real API calls. The UI is clearly labeled as showing mock data.
  */
+import { API_TIMEOUT_MS } from "./constants";
 import { nativeTokenContractId } from "./stellar";
 import { withTokenMetadata } from "./tokens";
 import {
@@ -149,23 +150,24 @@ async function apiFetchResponse(path: string, init?: RequestInit): Promise<Respo
   const base = apiBaseUrl();
   if (!base) return null;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    let res: Response | null = null;
-    try {
-      res = await fetch(`${base}${path}`, {
-        ...init,
-        headers: { Accept: "application/json", ...(init?.headers || {}) },
-        cache: "no-store",
-      });
-    } catch {
-      // Network error (DNS, connection reset, etc.) — treated the same as a retryable status below.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${base}${path}`, {
+      ...init,
+      headers: { Accept: "application/json", ...(init?.headers || {}) },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    return res.ok ? res : null;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.error(`API is not responding: ${path} timed out after ${API_TIMEOUT_MS}ms`);
     }
-
-    if (res?.ok) return res;
-    const isRetryable = res === null || RETRYABLE_STATUSES.has(res.status);
-    if (!isRetryable || attempt === MAX_RETRIES) return null;
-
-    await delay(RETRY_BASE_DELAY_MS * 2 ** attempt);
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
   return null;
 }
@@ -274,6 +276,51 @@ async function fetchStreamList(path: string): Promise<Stream[]> {
   const [views, reference] = await Promise.all([fetchAllPages(path), fetchLedgerReference()]);
   const resolveToken = makeTokenResolver(nativeTokenContractId());
   return withTokenMetadata(views.map((v) => mapApiStream(v, reference, resolveToken)));
+}
+
+export interface StreamsPage {
+  streams: Stream[];
+  /** From `X-Total-Count`; null when the server didn't send it. */
+  total: number | null;
+  /** Whether another page can be fetched at `offset + streams.length`. */
+  hasMore: boolean;
+}
+
+/**
+ * Fetches a single page (up to `PAGE_SIZE`) of a paginated list endpoint, for callers that want to
+ * load more incrementally (a "Load more" control) instead of `fetchAllPages`' full walk.
+ */
+async function fetchStreamsPage(path: string, offset: number): Promise<StreamsPage> {
+  const [res, reference] = await Promise.all([
+    apiFetchResponse(`${path}?limit=${PAGE_SIZE}&offset=${offset}`),
+    fetchLedgerReference(),
+  ]);
+  if (!res) return { streams: [], total: null, hasMore: false };
+
+  let batch: ApiStreamView[];
+  try {
+    batch = (await res.json()) as ApiStreamView[];
+  } catch {
+    return { streams: [], total: null, hasMore: false };
+  }
+
+  const totalHeader = Number(res.headers.get("x-total-count"));
+  const total = Number.isFinite(totalHeader) ? totalHeader : null;
+  const resolveToken = makeTokenResolver(nativeTokenContractId());
+  const streams = await withTokenMetadata(batch.map((v) => mapApiStream(v, reference, resolveToken)));
+  const loadedSoFar = offset + batch.length;
+  const hasMore = batch.length === PAGE_SIZE && (total === null || loadedSoFar < total);
+  return { streams, total, hasMore };
+}
+
+/** Fetches one page of streams where `address` is the sender, for "Load more" pagination. */
+export async function fetchStreamsBySenderPage(address: string, offset = 0): Promise<StreamsPage> {
+  return fetchStreamsPage(`/senders/${encodeURIComponent(address)}`, offset);
+}
+
+/** Fetches one page of streams where `address` is the recipient, for "Load more" pagination. */
+export async function fetchStreamsByRecipientPage(address: string, offset = 0): Promise<StreamsPage> {
+  return fetchStreamsPage(`/recipients/${encodeURIComponent(address)}`, offset);
 }
 
 /** Fetches streams where `address` is the sender. */

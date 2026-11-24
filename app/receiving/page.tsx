@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useStreamListPage } from "@/hooks/useStreamListPage";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { StreamCard } from "@/components/stream/StreamCard";
 import { StreamFilterBar } from "@/components/stream/StreamFilterBar";
@@ -12,6 +12,18 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Spinner } from "@/components/ui/Spinner";
+import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
+import { CopyButton } from "@/components/ui/CopyButton";
+import {
+  countByFilter,
+  filterStreams,
+  parseStreamListParams,
+  searchStreams,
+  sortStreams,
+  streamListParamsToSearchParams,
+  type StreamFilter,
+  type StreamSort,
+} from "@/lib/streamList";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { fetchWithdrawableOnChain, withdrawOnChain, ContractNotConfiguredError } from "@/lib/contracts";
 import { describeFreighterError } from "@/lib/freighter";
@@ -44,6 +56,16 @@ export default function ReceivingPage() {
   } = useStreamListPage(wallet.publicKey, "recipient");
   const [withdrawAllStatus, setWithdrawAllStatus] = useState<"idle" | "running" | "done">("idle");
   const [withdrawAllResults, setWithdrawAllResults] = useState<WithdrawAllResult[]>([]);
+
+  useEffect(() => {
+    const search = streamListParamsToSearchParams({ filter, query, sort }).toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+  }, [filter, query, sort, pathname, router]);
+
+  function clearFilters() {
+    setFilter("all");
+    setQuery("");
+  }
 
   if (!wallet.isConnected) {
     return (
@@ -195,7 +217,15 @@ export default function ReceivingPage() {
           }
         />
       ) : visibleStreams.length === 0 ? (
-        <EmptyState title="No matching streams" description="Try a different status filter or search." />
+        <EmptyState
+          title="No streams match your filters"
+          description="Try a different status filter or search term."
+          action={
+            <button type="button" onClick={clearFilters} className="btn-secondary">
+              Clear filters
+            </button>
+          }
+        />
       ) : (
         <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {visibleStreams.map((stream) => (

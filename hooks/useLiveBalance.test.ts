@@ -31,18 +31,20 @@ vi.mock("react", () => {
       }
       const setState = (next: T | ((prev: T) => T)) => {
         const slot = runtime.slots[i];
+        if (!slot) return;
         const value = typeof next === "function" ? (next as (prev: T) => T)(slot.value as T) : next;
         if (Object.is(value, slot.value)) return;
         slot.value = value;
         if (runtime.rendering) runtime.dirty = true;
         else runtime.render();
       };
-      return [runtime.slots[i].value as T, setState] as const;
+      const currentSlot = runtime.slots[i];
+      return [currentSlot?.value as T, setState] as const;
     },
     useRef: <T>(initial: T) => {
       const i = runtime.index++;
       if (!(i in runtime.slots)) runtime.slots[i] = { value: { current: initial } };
-      return runtime.slots[i].value as { current: T };
+      return runtime.slots[i]?.value as { current: T };
     },
     useEffect: (effect: () => void | (() => void), deps?: unknown[]) => {
       const i = runtime.index++;
@@ -50,8 +52,9 @@ vi.mock("react", () => {
       if (previous && !depsChanged(deps, previous.deps)) return;
       runtime.slots[i] = { deps, cleanup: previous?.cleanup };
       runtime.pending.push(() => {
-        (runtime.slots[i].cleanup as (() => void) | undefined)?.();
-        runtime.slots[i].cleanup = effect();
+        (runtime.slots[i]?.cleanup as (() => void) | undefined)?.();
+        const slot = runtime.slots[i];
+        if (slot) slot.cleanup = effect();
       });
     },
   };
