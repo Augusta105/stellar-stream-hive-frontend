@@ -44,10 +44,13 @@ export function TotalWithdrawable({ streams }: TotalWithdrawableProps) {
     return () => clearInterval(tick);
   }, [hasLiveStreams, snapshot]);
 
-  if (streams.length === 0) return null;
-  if (hasLiveStreams && !snapshot && isLoading) {
-    return <p role="status" className="text-sm text-muted">Loading withdrawable totals…</p>;
-  }
+  // Only aggregate cleanly when every stream shares a token; mixed-token
+  // portfolios are shown per-card instead of summed into one misleading number.
+  const firstStream = streams[0];
+  if (!firstStream) return null;
+  const symbol = firstStream.token.symbol;
+  const decimals = firstStream.token.decimals;
+  const sameToken = streams.every((s) => s.token.contractId === firstStream.token.contractId);
 
   const currentLedger = snapshot ? estimateCurrentLedger({
     lastKnownLedger: snapshot.ledger,
