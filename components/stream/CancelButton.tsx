@@ -15,6 +15,17 @@ import { formatTokenAmount, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import {
+  CANCEL_STREAM_NOT_FOUND,
+  CANCEL_COMPUTING_SPLIT,
+  CANCEL_CONFIRM_BUTTON,
+  CANCEL_KEEP_BUTTON,
+  CANCEL_SIGNING,
+  CANCEL_SUCCESS,
+  CANCEL_VIEW_TX,
+  CANCEL_DIALOG_HEADING,
+  CANCEL_DIALOG_BODY,
+} from "@/lib/messages";
 
 type Status = "idle" | "loadingSplit" | "confirming" | "signing" | "success" | "error";
 
@@ -84,11 +95,11 @@ export function CancelButton({
         if (e.shiftKey) {
           if (active === first || !currentPanel.contains(active)) {
             e.preventDefault();
-            last.focus();
+            last?.focus();
           }
         } else if (active === last || !currentPanel.contains(active)) {
           e.preventDefault();
-          first.focus();
+          first?.focus();
         }
       }
     }
@@ -105,7 +116,7 @@ export function CancelButton({
     setError(null);
     try {
       const [stream, ledgerSnapshot] = await Promise.all([fetchStreamOnChain(streamId), fetchLatestLedgerSnapshot()]);
-      if (!stream) throw new Error("Stream not found on-chain.");
+      if (!stream) throw new Error(CANCEL_STREAM_NOT_FOUND);
 
       const totalAmount = BigInt(stream.totalAmount);
       const streamedNow = computeStreamedAmount({
@@ -181,16 +192,15 @@ export function CancelButton({
     >
       <div ref={panelRef} tabIndex={-1} className="w-full max-w-md rounded-2xl border border-border bg-surface p-6">
         <h3 id="cancel-stream-heading" className="mb-1 text-lg font-semibold">
-          Cancel this stream?
+          {CANCEL_DIALOG_HEADING}
         </h3>
         <p className="mb-4 text-sm text-muted">
-          This ends the stream immediately and splits the funds based on what has streamed so far. This cannot be
-          undone.
+          {CANCEL_DIALOG_BODY}
         </p>
 
         {status === "loadingSplit" && (
           <div className="flex items-center gap-2 py-6 text-sm text-muted">
-            <Spinner size="sm" /> Calculating exact split from chain…
+            <Spinner size="sm" /> {CANCEL_COMPUTING_SPLIT}
           </div>
         )}
 
@@ -218,13 +228,13 @@ export function CancelButton({
 
         {status === "success" && txHash && (
           <div role="status" className="mb-4">
-            <p className="mb-2 text-sm font-medium text-primary">Stream cancelled.</p>
+            <p className="mb-2 text-sm font-medium text-primary">{CANCEL_SUCCESS}</p>
             {(() => {
               const explorerUrl = stellarExpertTxUrl(txHash, STELLAR_EXPERT_NETWORK);
               return (
                 explorerUrl && (
                   <a href={explorerUrl} target="_blank" rel="noreferrer" className="text-sm text-accent underline">
-                    View transaction on Stellar Expert
+                    {CANCEL_VIEW_TX}
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 )
@@ -247,10 +257,10 @@ export function CancelButton({
                 disabled={status !== "confirming"}
                 isLoading={status === "signing"}
               >
-                {status === "signing" ? "Confirm in wallet…" : "Yes, cancel stream"}
+                {status === "signing" ? CANCEL_SIGNING : CANCEL_CONFIRM_BUTTON}
               </Button>
               <Button variant="secondary" className="flex-1" onClick={close} disabled={status === "signing"}>
-                Keep streaming
+                {CANCEL_KEEP_BUTTON}
               </Button>
             </>
           )}

@@ -14,6 +14,17 @@ import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
 import { checkAmount } from "@/lib/validation";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import {
+  WITHDRAW_NOTHING_AVAILABLE,
+  WITHDRAW_AMOUNT_ZERO,
+  withdrawExceedsAvailable,
+  WITHDRAW_CHECKING,
+  WITHDRAW_SIGNING,
+  WITHDRAW_SUBMITTING,
+  WITHDRAW_CONFIRM_BUTTON,
+  WITHDRAW_SUCCESS_HEADING,
+  WITHDRAW_VIEW_TX,
+} from "@/lib/messages";
 
 type Status = "idle" | "checking" | "signing" | "submitting" | "success" | "error";
 
@@ -64,19 +75,19 @@ export function WithdrawButton({
         const result = checkAmount(customAmount, tokenDecimals);
         if (!result.ok) throw new Error(result.reason);
         const requested = result.baseUnits;
-        if (requested <= 0n) throw new Error("Enter an amount greater than zero.");
+        if (requested <= 0n) throw new Error(WITHDRAW_AMOUNT_ZERO);
         if (requested > actualWithdrawable) {
           throw new Error(
-            `Requested amount exceeds what's currently withdrawable on-chain ` +
-              `(${formatBaseUnits(actualWithdrawable, tokenDecimals, { maxDecimals: 7, minDecimals: 2 })} ${tokenSymbol}). ` +
-              `Refresh and try again.`
+            withdrawExceedsAvailable(
+              `${formatBaseUnits(actualWithdrawable, tokenDecimals, { maxDecimals: 7, minDecimals: 2 })} ${tokenSymbol}`
+            )
           );
         }
         amount = requested;
       }
 
       if (amount <= 0n) {
-        throw new Error("Nothing is withdrawable yet.");
+        throw new Error(WITHDRAW_NOTHING_AVAILABLE);
       }
 
       setStatus("signing");
@@ -131,7 +142,7 @@ export function WithdrawButton({
   if (status === "success" && txHash) {
     return (
       <div role="status" className="card border-primary/30 bg-primary/5">
-        <p className="font-semibold text-primary">Withdrawal submitted</p>
+        <p className="font-semibold text-primary">{WITHDRAW_SUCCESS_HEADING}</p>
         {(() => {
           const explorerUrl = stellarExpertTxUrl(txHash, STELLAR_EXPERT_NETWORK);
           return (
@@ -142,7 +153,7 @@ export function WithdrawButton({
                 rel="noopener noreferrer"
                 className="mt-2 inline-block text-sm text-accent underline"
               >
-                View transaction on Stellar Expert
+                {WITHDRAW_VIEW_TX}
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>
             )
@@ -222,17 +233,17 @@ export function WithdrawButton({
           {isBusy ? (
             <>
               <Spinner size="sm" decorative />
-              {status === "checking" && "Checking on-chain balance…"}
-              {status === "signing" && "Confirm in wallet…"}
-              {status === "submitting" && "Submitting…"}
+              {status === "checking" && WITHDRAW_CHECKING}
+              {status === "signing" && WITHDRAW_SIGNING}
+              {status === "submitting" && WITHDRAW_SUBMITTING}
             </>
           ) : (
-            "Confirm withdrawal"
+            WITHDRAW_CONFIRM_BUTTON
           )}
         </button>
         <button type="button" onClick={() => setOpen(false)} disabled={isBusy} className="btn-secondary">
           Cancel
-        </Button>
+        </button>
       </div>
     </div>
   );
