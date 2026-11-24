@@ -3,7 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
-import { useStreams } from "@/hooks/useStreams";
 import { StreamCard } from "@/components/stream/StreamCard";
 import { StreamFilterBar } from "@/components/stream/StreamFilterBar";
 import { RefreshButton } from "@/components/stream/RefreshButton";
@@ -30,8 +29,6 @@ import { fetchWithdrawableOnChain, withdrawOnChain, ContractNotConfiguredError }
 import { describeFreighterError } from "@/lib/freighter";
 import { shortenAddress, stellarExpertTxUrl } from "@/lib/format";
 import { STELLAR_EXPERT_NETWORK } from "@/lib/stellar";
-import { CardSkeletonGrid } from "@/components/ui/CardSkeleton";
-import { CopyButton } from "@/components/ui/CopyButton";
 
 interface WithdrawAllResult {
   streamId: string;
@@ -41,15 +38,22 @@ interface WithdrawAllResult {
 
 export default function ReceivingPage() {
   const wallet = useWallet();
-  const { streams, isLoading, error, apiConfigured, lastUpdatedAt, refetch } = useStreams(wallet.publicKey, "recipient");
-  const [filter, setFilter] = useState<StreamFilter>("all");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<StreamSort>("default");
-  const counts = useMemo(() => countByFilter(streams), [streams]);
-  const visibleStreams = useMemo(
-    () => sortStreams(searchStreams(filterStreams(streams, filter), query), sort),
-    [streams, filter, query, sort]
-  );
+  const {
+    streams,
+    isLoading,
+    error,
+    apiConfigured,
+    lastUpdatedAt,
+    refetch,
+    filter,
+    setFilter,
+    query,
+    setQuery,
+    sort,
+    setSort,
+    counts,
+    visibleStreams,
+  } = useStreamListPage(wallet.publicKey, "recipient");
   const [withdrawAllStatus, setWithdrawAllStatus] = useState<"idle" | "running" | "done">("idle");
   const [withdrawAllResults, setWithdrawAllResults] = useState<WithdrawAllResult[]>([]);
 

@@ -26,6 +26,8 @@ import { API_TIMEOUT_MS } from "./constants";
 import { nativeTokenContractId } from "./stellar";
 import { withTokenMetadata } from "./tokens";
 import {
+  isValidApiStats,
+  isValidApiStream,
   makeTokenResolver,
   mapApiStats,
   mapApiStream,
@@ -124,6 +126,22 @@ export function isApiConfigured(): boolean {
   return useMockData() || apiBaseUrl() !== null;
 }
 
+/** Transient failures worth a retry: a hung/reset connection, or an upstream/gateway hiccup. */
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+/** Attempts beyond the first — 2 retries means up to 3 attempts total. */
+const MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 200;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Every call site here is an idempotent GET, so retrying is always safe.
+ * Retries a network error or a 502/503/504 up to twice with a short
+ * exponential backoff (200ms, then 400ms); any other failure (e.g. 400/404)
+ * is not transient and fails on the first attempt.
+ */
 async function apiFetchResponse(path: string, init?: RequestInit): Promise<Response | null> {
   if (useMockData()) {
     return mockFetchResponse(path);
@@ -151,6 +169,7 @@ async function apiFetchResponse(path: string, init?: RequestInit): Promise<Respo
   } finally {
     clearTimeout(timeout);
   }
+  return null;
 }
 
 function mockFetchResponse(path: string): Response {
@@ -205,10 +224,15 @@ async function fetchLedgerReference(): Promise<LedgerReference | null> {
   return { ledger: ready.latest_ledger, timestampMs: Date.now() };
 }
 
-/** Fetches platform-wide stats for the landing page. Returns null if the API is unreachable/unconfigured. */
+/**
+ * Fetches platform-wide stats for the landing page. Returns null if the API
+ * is unreachable/unconfigured, or if the payload is missing/mis-shaped
+ * fields — there's only one `/stats` object, so an invalid payload fails the
+ * whole fetch rather than partially rendering fabricated numbers.
+ */
 export async function fetchPlatformStats(): Promise<PlatformStats | null> {
-  const stats = await apiFetch<ApiStats>("/stats");
-  return stats ? mapApiStats(stats) : null;
+  const stats = await apiFetch<unknown>("/stats");
+  return isValidApiStats(stats) ? mapApiStats(stats) : null;
 }
 
 /**
@@ -228,17 +252,22 @@ async function fetchAllPages(path: string): Promise<ApiStreamView[]> {
       throw new Error(`Failed to load page ${page + 1} of ${path}`);
     }
 
-    let batch: ApiStreamView[];
+    let rawBatch: unknown[];
     try {
-      batch = (await res.json()) as ApiStreamView[];
+      rawBatch = (await res.json()) as unknown[];
     } catch {
       if (page === 0) break;
       throw new Error(`Failed to load page ${page + 1} of ${path}`);
     }
+
+    // A single malformed item (missing/renamed field) drops just that item
+    // rather than failing the whole list — one bad row from the indexer
+    // shouldn't hide every other stream the user is trying to see.
+    const batch = rawBatch.filter(isValidApiStream);
     all.push(...batch);
 
     const total = Number(res.headers.get("x-total-count"));
-    if (batch.length < PAGE_SIZE || (Number.isFinite(total) && all.length >= total)) break;
+    if (rawBatch.length < PAGE_SIZE || (Number.isFinite(total) && all.length >= total)) break;
   }
   return all;
 }
@@ -307,10 +336,10 @@ export async function fetchStreamsByRecipient(address: string): Promise<Stream[]
 /** Fetches a single stream by id from the indexer (faster than a chain read, used for initial page load). */
 export async function fetchStreamById(id: string): Promise<Stream | null> {
   const [view, reference] = await Promise.all([
-    apiFetch<ApiStreamView>(`/streams/${encodeURIComponent(id)}`),
+    apiFetch<unknown>(`/streams/${encodeURIComponent(id)}`),
     fetchLedgerReference(),
   ]);
-  if (!view) return null;
+  if (!isValidApiStream(view)) return null;
   const [stream] = await withTokenMetadata([mapApiStream(view, reference, makeTokenResolver(nativeTokenContractId()))]);
   return stream;
 }
