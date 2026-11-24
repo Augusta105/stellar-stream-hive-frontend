@@ -51,7 +51,7 @@ export function useLiveBalance(params: UseLiveBalanceParams): LiveBalanceState {
   // used and no chain fetch happens. When `enabled` is false we still want the
   // initial snapshot so completed/cancelled streams report their real
   // remaining balance instead of a placeholder zero.
-  const { snapshot, isLoading, error, lastSyncedAt } = useLedgerSnapshot({ simulatedReference });
+  const { reference: snapshot, isLoading, error, lastSyncedAt } = useLedgerSnapshot({ simulatedReference });
 
   // Per-second UI tick. Purely forces a re-render so the derived values below
   // recompute against the current wall-clock time.
